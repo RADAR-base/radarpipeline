@@ -87,10 +87,6 @@ class Project():
             total_required_data.update(feature_group.get_required_data())
         return list(total_required_data)
 
-    def get_input_data(self):
-        self.total_required_data = self._get_total_required_data()
-        self.data = read_data(self.total_required_data)
-
     def _validate_config(self):
         # Check if all the required keys are present
         required_keys = ["input_data", "project", "features", "output_data"]
@@ -152,4 +148,8 @@ class Project():
                 raise ValueError("Wrong data_format")
         else:
             raise ValueError("Wrong data_location")
+
+    def compute_features(self):
+        for feature_group in self.feature_groups:
+            feature_group.compute(self.data)
 
