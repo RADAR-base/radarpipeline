@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Tuple, Dict
-from ..datalib import Data
+from ..datalib import RadarData
 
 class Feature(ABC):
     def __init__(self, name: str, description:str, required_input_data:List[str]) -> None:
@@ -15,7 +15,7 @@ class Feature(ABC):
         return self.required_input_data
 
     @abstractmethod
-    def calculate(self, data: Data):
+    def calculate(self, data: RadarData):
         """
         Calculates the feature.
         """

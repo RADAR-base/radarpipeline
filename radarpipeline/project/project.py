@@ -142,12 +142,12 @@ class Project():
     def fetch_data(self):
         if self.config["input_data"]["data_location"] == "sftp":
             if self.config["input_data"]["data_format"] == "csv":
-                self.data = SFTPDataReaderCSV()
+                self.data = SFTPDataReaderCSV(self.config["input_data"], self.total_required_data).read()
             else:
                 raise ValueError("Wrong data_format")
         elif self.config["input_data"]["data_location"] == "local":
             if self.config["input_data"]["data_format"] == "csv":
-                self.data = LocalDataReaderCSV()
+                self.data = LocalDataReaderCSV(self.config["input_data"], self.total_required_data)
             else:
                 raise ValueError("Wrong data_format")
         else:

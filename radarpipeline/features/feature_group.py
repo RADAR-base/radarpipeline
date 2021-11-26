@@ -1,7 +1,7 @@
 from .feature import Feature
 from typing import List, Tuple
 from abc import ABC, abstractmethod
-from ..datalib import Data
+from ..datalib import RadarData
 
 class FeatureGroup(ABC):
     """
@@ -29,13 +29,13 @@ class FeatureGroup(ABC):
         return list(required_input_data)
 
     @abstractmethod
-    def preprocess(self, data: Data) -> Data:
+    def preprocess(self, data: RadarData) -> RadarData:
         """
         Preprocess the data for each feature in the group.
         """
         pass
 
-    def get_all_features(self, data: Data):
+    def get_all_features(self, data: RadarData):
         """
         Compute the features for each feature in the group.
         """
@@ -47,7 +47,7 @@ class FeatureGroup(ABC):
         return feature_names, feature_values
 
     @abstractmethod
-    def compute_features(self, data: Data) -> Data:
+    def compute_features(self, data: RadarData) -> RadarData:
         """
         compute and combine the features for each feature in the group.
         """
