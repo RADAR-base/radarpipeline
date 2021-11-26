@@ -26,3 +26,7 @@ class Data(ABC):
     @abstractmethod
     def get_data_size(self) -> int:
         pass
+
+    def _preprocess_data(self) -> None:
+        for key in self._data.keys():
+            self._data[key]._preprocess_data()

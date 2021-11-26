@@ -6,6 +6,7 @@ import pandas as pd
 class RadarUserData(Data):
     def __init__(self, data: Dict[str, RadarVariableData]) -> None:
         self._data = data
+        self._preprocess_data()
 
     def get_data(self) -> Dict[str, RadarVariableData]:
         return self._data

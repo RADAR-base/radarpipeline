@@ -6,6 +6,7 @@ from . import Data
 class RadarVariableData(Data):
     def __init__(self, data: Dict[str, RadarFileData]) -> None:
         self._data = data
+        self._preprocess_data()
 
     def get_data(self) -> Dict[str, RadarFileData]:
         return self._data

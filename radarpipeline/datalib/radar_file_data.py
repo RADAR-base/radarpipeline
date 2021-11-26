@@ -17,3 +17,7 @@ class RadarFileData(Data):
 
     def get_data_size(self) -> int:
         return self._data.size
+
+    def _preprocess_data(self) -> None:
+        self._data['value.time'] = pd.to_datetime(self._data['value.time'], unit="s")
+        self._data['value.timeReceived'] = pd.to_datetime(self._data['value.timeReceived'], unit="s")
