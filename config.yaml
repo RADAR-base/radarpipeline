@@ -1,11 +1,13 @@
 input_data:
   # Data location can be local directory path or sftp server path
   data_location: sftp
+  data_format: csv
   # If sftp, use this authenticaton
   # SFTP authentication data
   sftp_directory: /mnt/pool0/RADAR-CNS/HDFS_CSV/output-gzip/RADAR-ART-KCL-s1/
   sftp_host: radar-base-nas.brc.iop.kcl.ac.uk
   sftp_username: hsankesa
+  sftp_password:
   sftp_private_key: ~/.ssh/id_rsa
   # Else select local path
   local_directory:
@@ -16,7 +18,7 @@ project:
 
 features:
   # Here we can select existing feature in feature directory or give path of another feature class
-  - sleep features
+  - "heart-rate-sleep-features"
 
 output_data:
   # Output location can be a pgdb, or a local path

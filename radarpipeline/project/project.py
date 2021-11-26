@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import yaml
 from ..features import Feature, FeatureGroup
-from ..io import read_data, write_data
+from ..io import SFTPDataReaderCSV, LocalDataReaderCSV
 import importlib
 import inspect
 
@@ -18,6 +18,7 @@ class Project():
         self.config = self._get_config()
         self._validate_config()
         self.feature_groups = self._look_up_features()
+        self.total_required_data = self._get_total_required_data()
 
     def _get_config(self):
         # Read the yaml file
@@ -138,6 +139,17 @@ class Project():
         if len(self.config["features"]) == 0:
             raise ValueError("features array is empty")
 
-
-
+    def fetch_data(self):
+        if self.config["input_data"]["data_location"] == "sftp":
+            if self.config["input_data"]["data_format"] == "csv":
+                self.data = SFTPDataReaderCSV()
+            else:
+                raise ValueError("Wrong data_format")
+        elif self.config["input_data"]["data_location"] == "local":
+            if self.config["input_data"]["data_format"] == "csv":
+                self.data = LocalDataReaderCSV()
+            else:
+                raise ValueError("Wrong data_format")
+        else:
+            raise ValueError("Wrong data_location")
 
