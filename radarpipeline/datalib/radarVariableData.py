@@ -1,4 +1,4 @@
-from .radar_file_data import RadarFileData
+from .radarFileData import RadarFileData
 from typing import List, Tuple, Dict
 import pandas as pd
 from . import Data

@@ -1,5 +1,5 @@
-from .radar_variable_data import RadarVariableData
-from . import Data
+from .radarVariableData import RadarVariableData
+from .data import Data
 from typing import List, Tuple, Dict
 import pandas as pd
 

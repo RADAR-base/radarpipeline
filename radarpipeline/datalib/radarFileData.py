@@ -1,4 +1,4 @@
-from . import Data
+from .data import Data
 import pandas as pd
 from typing import List, Tuple, Dict
 

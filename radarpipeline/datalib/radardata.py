@@ -1,5 +1,5 @@
-from . import Data
-from radar_user_data import RadarUserData
+from .data import Data
+from .radarUserData import RadarUserData
 from typing import List, Tuple, Dict, Union
 import pandas as pd
 

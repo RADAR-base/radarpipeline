@@ -21,9 +21,9 @@ features:
   - "heart-rate-sleep-features"
 
 output_data:
-  # Output location can be a pgdb, or a local path
-  output_location: x
-  output_format: y #can be xlsx, csv
+  # Output location can be a pgdb, or a local
+  output_location: local
+  output_format: csv #can be xlsx, csv
   # If location in pg table then we would need postgres authentication
   postgres_username:
   postgres_password:
@@ -32,5 +32,5 @@ output_data:
   postgres_database:
   postgres_tablename:
   # Else local directory
-  output_directory:
+  output_directory: ../test_pipeline
 

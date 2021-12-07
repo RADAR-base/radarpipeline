@@ -123,7 +123,7 @@ class Project():
             if "postgres_table" not in self.config["output_data"]:
                 raise ValueError("postgres_table is not present in the config file")
         elif self.config["output_data"]["output_location"] == "local":
-            if "output_directory" not in self.config["output_directory"]:
+            if "output_directory" not in self.config["output_data"]:
                 raise ValueError("local_directory is not present in the config file")
             # Raise error if output_format it not csv or xlsx
             if self.config["output_data"]["output_format"] not in ["csv", "xlsx"]:
