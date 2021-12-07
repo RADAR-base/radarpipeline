@@ -6,7 +6,6 @@ import pandas as pd
 class RadarData(Data):
     def __init__(self, data: Dict[str, RadarUserData]) -> None:
         self._data = data
-        self._preprocess_data()
 
     def get_data(self) -> Dict[str, RadarUserData]:
         return self._data
@@ -24,7 +23,7 @@ class RadarData(Data):
         return self._data[key]
 
     def get_combined_data(self) -> pd.DataFrame:
-        return pd.concat([self._data[key].get_combined_data() for key in self._data.keys()]).reset_index(drop_index=True)
+        return pd.concat([self._data[key].get_combined_data() for key in self._data.keys()]).reset_index(drop=True)
 
     def get_combined_data_by_variable(self, variable: Union[str, List[str]]) -> List[pd.DataFrame]:
         if isinstance(variable, str):
@@ -35,3 +34,8 @@ class RadarData(Data):
         if isinstance(user_id, str):
             user_id = [user_id]
         return [self._data.get_data_by_key(user).get_combined_data() for user in user_id]
+
+    #def _preprocess_data(self) -> None:
+    #    for key in self._data.keys():
+    #        for key2 in self._data[key].keys():
+    #            self._data[key][key2]._preprocess_data()

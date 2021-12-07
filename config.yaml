@@ -1,6 +1,6 @@
 input_data:
   # Data location can be local directory path or sftp server path
-  data_location: sftp
+  data_location: local
   data_format: csv
   # If sftp, use this authenticaton
   # SFTP authentication data
@@ -10,7 +10,7 @@ input_data:
   sftp_password:
   sftp_private_key: ~/.ssh/id_rsa
   # Else select local path
-  local_directory:
+  local_directory: ../../../ART/data_cleaning/fitbit_data/
 
 project:
   project_name: x

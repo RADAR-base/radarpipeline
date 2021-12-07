@@ -24,6 +24,4 @@ class RadarVariableData(Data):
         return self._data[key]
 
     def get_combined_data(self) -> pd.DataFrame:
-        return pd.concat([self._data[key].get_data() for key in self._data.keys()]).reset_index(drop_index=True)
-
-
+        return pd.concat([self._data[key].get_data() for key in self._data.keys()]).reset_index(drop=True)

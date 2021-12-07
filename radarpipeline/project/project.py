@@ -143,7 +143,7 @@ class Project():
                 raise ValueError("Wrong data_format")
         elif self.config["input_data"]["data_location"] == "local":
             if self.config["input_data"]["data_format"] == "csv":
-                self.data = LocalDataReaderCSV(self.config["input_data"], self.total_required_data)
+                self.data = LocalDataReaderCSV(self.config["input_data"], self.total_required_data).read()
             else:
                 raise ValueError("Wrong data_format")
         else:
