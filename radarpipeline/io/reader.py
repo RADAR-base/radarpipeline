@@ -10,6 +10,7 @@ from tqdm import tqdm
 from multiprocessing.pool import Pool
 from functools import partialmethod
 from itertools import repeat
+import gc
 
 class SFTPDataReaderCSV(DataReader):
     def __init__(self, config: Dict, required_data: List[str]) -> None:

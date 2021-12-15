@@ -21,7 +21,10 @@ class RadarUserData(Data):
         return len(self._data)
 
     def get_data_by_key(self, key: str) -> RadarVariableData:
-        return self._data[key]
+        if key in self._data:
+            return self._data[key]
+        else:
+            return None
 
     def get_combined_data(self) -> pd.DataFrame:
         return pd.concat([self._data[key].get_combined_data() for key in self._data.keys()]).reset_index(drop=True)

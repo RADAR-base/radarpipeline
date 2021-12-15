@@ -19,6 +19,7 @@ class Project():
         self._validate_config()
         self.feature_groups = self._look_up_features()
         self.total_required_data = self._get_total_required_data()
+        self.features = {}
 
     def _get_config(self):
         # Read the yaml file
@@ -151,5 +152,5 @@ class Project():
 
     def compute_features(self):
         for feature_group in self.feature_groups:
-            feature_group.compute(self.data)
+            self.features[feature_group] = feature_group.compute_features(self.data)
 
