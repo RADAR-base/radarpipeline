@@ -1,7 +1,8 @@
 twine
-yaml
+pyYaml
 numpy
 pandas
 matplotlib
 seaborn
 scipy
+pysftp
