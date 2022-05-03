@@ -24,10 +24,18 @@ class Project():
     def _get_config(self):
         # Read the yaml file
         if isinstance(self.input_data, str):
+            # Raise error if the file does not exist, or is empty
+            if not os.path.exists(self.input_data):
+                raise ValueError("Input file does not exist ")
+            if os.stat(self.input_data).st_size == 0:
+                raise ValueError("Input file is empty")
+
             with open(self.input_data, "r") as f:
                 config = yaml.load(f, Loader=yaml.FullLoader)
-        else:
+        elif isinstance(self.input_data, dict):
             config = self.input_data
+        else:
+            raise ValueError("Wrong input data type. Should be yaml file path or dict.")
         return config
 
     def _get_feature_groups_from_filepath(self, filepath):
@@ -95,37 +103,41 @@ class Project():
             if key not in self.config:
                 raise ValueError(f"{key} is not present in the config file")
 
-        #  check if input_data is satisy all the conditions
+        #  check if input_data satisfies all the conditions
         if self.config["input_data"]["data_location"] == "sftp":
-            if "sftp_host" not in self.config["input_data"]:
-                raise ValueError("sftp_host is not present in the config file")
-            if "sftp_username" not in self.config["input_data"]:
-                raise ValueError("sftp_username is not present in the config file")
-            if "sftp_directory" not in self.config["input_data"]:
-                raise ValueError("sftp_directory is not present in the config file")
-            if "sftp_private_key" not in self.config["input_data"]:
-                raise ValueError("sftp_private_key is not present in the config file")
+            sftp_config_keys = [
+                "sftp_host",
+                "sftp_username",
+                "sftp_directory",
+                "sftp_private_key"
+            ]
+            for key in sftp_config_keys:
+                if key not in self.config["input_data"]:
+                    raise ValueError(f"{key} is not present in the config file")
+
         elif self.config["input_data"]["data_location"] == "local":
             if "local_directory" not in self.config["input_data"]:
                 raise ValueError("local_directory is not present in the config file")
         else:
             raise ValueError("data_location is not present in the config file")
 
-        # Check if output_data is satisy all the conditions
+        # Check if output_data satisfies all the conditions
         if self.config["output_data"]["output_location"] == "postgres":
-            if "postgres_host" not in self.config["output_data"]:
-                raise ValueError("postgres_host is not present in the config file")
-            if "postgres_username" not in self.config["output_data"]:
-                raise ValueError("postgres_username is not present in the config file")
-            if "postgres_database" not in self.config["output_data"]:
-                raise ValueError("postgres_database is not present in the config file")
-            if "postgres_password" not in self.config["output_data"]:
-                raise ValueError("postgres_password is not present in the config file")
-            if "postgres_table" not in self.config["output_data"]:
-                raise ValueError("postgres_table is not present in the config file")
+            postgres_config_keys = [
+                "postgres_host",
+                "postgres_username",
+                "postgres_database",
+                "postgres_password",
+                "postgres_table"
+            ]
+            for key in postgres_config_keys:
+                if key not in self.config["output_data"]:
+                    raise ValueError(f"{key} is not present in the config file")
+
         elif self.config["output_data"]["output_location"] == "local":
             if "output_directory" not in self.config["output_data"]:
-                raise ValueError("local_directory is not present in the config file")
+                raise ValueError("output_directory is not present in the config file")
+                
             # Raise error if output_format it not csv or xlsx
             if self.config["output_data"]["output_format"] not in ["csv", "xlsx"]:
                 raise ValueError("Wrong output_format")
@@ -153,4 +165,3 @@ class Project():
     def compute_features(self):
         for feature_group in self.feature_groups:
             self.features[feature_group] = feature_group.compute_features(self.data)
-

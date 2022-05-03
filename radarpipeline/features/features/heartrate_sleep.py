@@ -3,7 +3,7 @@ import numpy as np
 
 class MedianHeartRate(Feature):
     def __init__(self):
-        self.name = "Median Heart rate while spleeping"
+        self.name = "Median Heart rate while sleeping"
         self.description = "Median Heart rate during different sleep stages"
         self.required_input_data = ["connect_fitbit_intraday_heart_rate", "connect_fitbit_sleep_stages"]
         super().__init__(self.name, self.description, self.required_input_data)
@@ -17,7 +17,7 @@ class MedianHeartRate(Feature):
 
 class SdHeartRate(Feature):
     def __init__(self):
-        self.name = "Heart rate SD while spleeping"
+        self.name = "Heart rate SD while sleeping"
         self.description = "Heart rate SD during different sleep stages"
         self.required_input_data = ["connect_fitbit_intraday_heart_rate", "connect_fitbit_sleep_stages"]
         super().__init__(self.name, self.description, self.required_input_data)
