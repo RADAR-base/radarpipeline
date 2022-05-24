@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(name='radarpipeline',
       version='0.0.1',
-      description='A python feature generation and visualzation package use with RADAR project data.',
+      description='A python feature generation and visualization package use with RADAR project data.',
       url='https://github.com/RADAR-base/radar-pipeline',
       author='Heet Sankesara',
       author_email='heet.sankesara@kcl.ac.uk',
