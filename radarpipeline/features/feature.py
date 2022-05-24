@@ -2,8 +2,9 @@ from abc import ABC, abstractmethod
 from typing import List, Tuple, Dict
 from ..datalib import RadarData
 
+
 class Feature(ABC):
-    def __init__(self, name: str, description:str, required_input_data:List[str]) -> None:
+    def __init__(self, name: str, description: str, required_input_data: List[str]) -> None:
         self.name = name
         self.description = description
         self.required_input_data = required_input_data

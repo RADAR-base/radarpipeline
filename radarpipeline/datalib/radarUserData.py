@@ -1,7 +1,8 @@
 from .radarVariableData import RadarVariableData
 from .data import Data
 from typing import List, Tuple, Dict
-import pandas as pd
+from dask import dataframe as dd
+
 
 class RadarUserData(Data):
     def __init__(self, data: Dict[str, RadarVariableData]) -> None:
@@ -26,7 +27,5 @@ class RadarUserData(Data):
         else:
             return None
 
-    def get_combined_data(self) -> pd.DataFrame:
-        return pd.concat([self._data[key].get_combined_data() for key in self._data.keys()]).reset_index(drop=True)
-
-
+    def get_combined_data(self) -> dd.DataFrame:
+        return dd.concat([self._data[key].get_combined_data() for key in self._data.keys()]).reset_index(drop=True)

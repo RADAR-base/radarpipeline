@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import List, Tuple, Dict
 import pandas as pd
+from dask import dataframe as dd
+
 
 class Data(ABC):
     def __init__(self) -> None:
