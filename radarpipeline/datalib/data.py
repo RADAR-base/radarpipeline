@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List, Tuple, Dict
 import pandas as pd
 
+
 class Data(ABC):
     def __init__(self) -> None:
         pass

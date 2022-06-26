@@ -3,6 +3,7 @@ from .data import Data
 from typing import List, Tuple, Dict
 import pandas as pd
 
+
 class RadarUserData(Data):
     def __init__(self, data: Dict[str, RadarVariableData]) -> None:
         self._data = data
@@ -28,5 +29,3 @@ class RadarUserData(Data):
 
     def get_combined_data(self) -> pd.DataFrame:
         return pd.concat([self._data[key].get_combined_data() for key in self._data.keys()]).reset_index(drop=True)
-
-

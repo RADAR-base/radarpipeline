@@ -2,6 +2,7 @@ from .data import Data
 import pandas as pd
 from typing import List, Tuple, Dict
 
+
 class RadarFileData(Data):
     def __init__(self, data: pd.DataFrame) -> None:
         self._data = data
@@ -20,8 +21,11 @@ class RadarFileData(Data):
 
     def _preprocess_data(self) -> None:
         if 'value.time' in self._data.columns:
-            self._data['value.time'] = pd.to_datetime(self._data['value.time'], unit="s")
+            self._data['value.time'] = pd.to_datetime(
+                self._data['value.time'], unit="s")
         if 'value.timeReceived' in self._data.columns:
-            self._data['value.timeReceived'] = pd.to_datetime(self._data['value.timeReceived'], unit="s")
+            self._data['value.timeReceived'] = pd.to_datetime(
+                self._data['value.timeReceived'], unit="s")
         if 'value.dateTime' in self._data.columns:
-            self._data['value.dateTime'] = pd.to_datetime(self._data['value.dateTime'])
+            self._data['value.dateTime'] = pd.to_datetime(
+                self._data['value.dateTime'])

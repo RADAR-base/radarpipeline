@@ -33,4 +33,3 @@ output_data:
   postgres_tablename:
   # Else local directory
   output_directory: ../test_pipeline
-

@@ -15,5 +15,5 @@ setup(name='radarpipeline',
           "Programming Language :: Python :: 3",
           "License :: OSI Approved :: Apache Software License",
           "Intended Audience :: Science/Research"
-          ]
-)
+      ]
+      )
