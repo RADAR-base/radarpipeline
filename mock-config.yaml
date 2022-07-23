@@ -1,0 +1,12 @@
+input_data:
+    data_location: mock
+    data_format: csv
+
+project:
+    project_name: mock_project
+
+features:
+    - 'mock'
+
+output_data:
+    output_location: mock

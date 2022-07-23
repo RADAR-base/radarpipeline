@@ -1,13 +1,19 @@
-from .feature import Feature
-from typing import List, Tuple
 from abc import ABC, abstractmethod
-from ..datalib import RadarData
+from typing import List, Tuple
+
+from radarpipeline.datalib import RadarData
+from radarpipeline.features.feature import Feature
 
 
 class FeatureGroup(ABC):
     """
     A class to hold a group of features.
     """
+
+    name: str
+    description: str
+    features: List[Feature]
+    required_input_data: List[str]
 
     def __init__(self, name: str, description: str, features: List[Feature]):
         self.name = name
@@ -25,6 +31,7 @@ class FeatureGroup(ABC):
         """
         Compute the required data for each feature in the group.
         """
+
         required_input_data = set()
         for feature in self.features:
             required_input_data.update(feature.get_required_data())
@@ -35,12 +42,14 @@ class FeatureGroup(ABC):
         """
         Preprocess the data for each feature in the group.
         """
+
         pass
 
     def get_all_features(self, data: RadarData):
         """
         Compute the features for each feature in the group.
         """
+
         feature_names = []
         feature_values = []
         for feature in self.features:
@@ -53,4 +62,5 @@ class FeatureGroup(ABC):
         """
         compute and combine the features for each feature in the group.
         """
+
         pass

@@ -1,0 +1,3 @@
+[submodule "mock-data"]
+	path = mock-data
+	url = https://github.com/RADAR-base-Analytics/mock-data
