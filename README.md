@@ -2,7 +2,7 @@
 
 A python feature generation and visualization package use with RADAR project data.
 
-## How to install
+## How to run
 
 **Note**: If you are using Windows, please install Spark and set environment variables as mentioned [here](https://sparkbyexamples.com/spark/apache-spark-installation-on-windows/) before going through the installation below. Specifically, you'll need to have the environment variables set, as given [here](https://spark.apache.org/docs/1.6.0/configuration.html#environment-variables).
 
