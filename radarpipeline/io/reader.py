@@ -238,11 +238,6 @@ class SparkCSVDataReader(DataReader):
             user_data_arr[uid] = RadarUserData(variable_data_arr)
 
         radar_data = RadarData(user_data_arr)
-        # print(
-        #     radar_data.get_combined_data_by_variable(
-        #         ["android_phone_step_count", "android_phone_battery_level"]
-        #     )
-        # )
         return radar_data
 
     def _read_data_files(
@@ -309,13 +304,11 @@ class AvroSchemaReader(SchemaReader):
         super().__init__(schema_dir)
 
     def is_schema_present(self) -> bool:
-        dir_files = os.listdir(self.schema_dir)
-        schema_file = list(
-            filter(lambda x: x.startswith("schema") and x.endswith(".json"), dir_files)
-        )
+        schema_dir_base = os.path.basename(self.schema_dir)
+        schema_file = os.path.join(self.schema_dir, f"schema-{schema_dir_base}.json")
 
-        if len(schema_file) == 1:
-            self.schema_file = schema_file[0]
+        if os.path.exists(schema_file):
+            self.schema_file = schema_file
             logger.info("Schema found")
             return True
 
