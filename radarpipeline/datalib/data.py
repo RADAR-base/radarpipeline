@@ -1,8 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import List, Tuple, Dict
-import pandas as pd
+from typing import Any, List
+
 
 class Data(ABC):
+    _data: Any
+
     def __init__(self) -> None:
         pass
 

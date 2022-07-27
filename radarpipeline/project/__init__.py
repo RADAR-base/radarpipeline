@@ -1,1 +1,1 @@
-from .project import Project
+from radarpipeline.project.project import Project

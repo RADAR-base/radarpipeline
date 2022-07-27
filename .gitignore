@@ -129,4 +129,7 @@ dmypy.json
 .pyre/
 
 # VS Code files
-.vscode/*
+.vscode/
+
+# Logs
+log/

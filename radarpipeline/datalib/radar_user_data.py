@@ -1,7 +1,10 @@
-from .radarVariableData import RadarVariableData
-from .data import Data
-from typing import List, Tuple, Dict
+from typing import Dict, List, Optional
+
 import pandas as pd
+
+from radarpipeline.datalib.data import Data
+from radarpipeline.datalib.radar_variable_data import RadarVariableData
+
 
 class RadarUserData(Data):
     def __init__(self, data: Dict[str, RadarVariableData]) -> None:
@@ -20,13 +23,13 @@ class RadarUserData(Data):
     def get_data_size(self) -> int:
         return len(self._data)
 
-    def get_data_by_key(self, key: str) -> RadarVariableData:
+    def get_data_by_key(self, key: str) -> Optional[RadarVariableData]:
         if key in self._data:
             return self._data[key]
         else:
             return None
 
     def get_combined_data(self) -> pd.DataFrame:
-        return pd.concat([self._data[key].get_combined_data() for key in self._data.keys()]).reset_index(drop=True)
-
-
+        return pd.concat(
+            [self._data[key].get_combined_data() for key in self._data.keys()]
+        ).reset_index(drop=True)
