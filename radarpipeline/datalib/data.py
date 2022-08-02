@@ -9,7 +9,7 @@ class Data(ABC):
         pass
 
     @abstractmethod
-    def get_data(self):
+    def get_data(self) -> Any:
         pass
 
     @abstractmethod
@@ -23,6 +23,12 @@ class Data(ABC):
     @abstractmethod
     def get_data_size(self) -> int:
         pass
+
+    def _get_data_as_pd(self) -> Any:
+        data_as_pd = {}
+        for key in self._data.keys():
+            data_as_pd[key] = self._data[key]._get_data_as_pd()
+        return data_as_pd
 
     def _preprocess_data(self) -> None:
         for key in self._data.keys():

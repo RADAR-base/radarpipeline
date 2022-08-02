@@ -11,7 +11,7 @@ import pandas as pd
 
 from radarpipeline.common import utils
 from radarpipeline.features import Feature, FeatureGroup
-from radarpipeline.io import LocalDataReaderCSV, SFTPDataReaderCSV, SparkCSVDataReader
+from radarpipeline.io import SparkCSVDataReader
 
 logger = logging.getLogger(__name__)
 
@@ -177,17 +177,19 @@ class Project:
     def fetch_data(self):
         if self.config["input_data"]["data_location"] == "sftp":
             if self.config["input_data"]["data_format"] == "csv":
-                self.data = SFTPDataReaderCSV(
-                    self.config["input_data"], self.total_required_data
-                ).read()
+                # self.data = SFTPDataReaderCSV(
+                #     self.config["input_data"], self.total_required_data
+                # ).read()
+                pass
             else:
                 raise ValueError("Wrong data_format")
 
         elif self.config["input_data"]["data_location"] == "local":
             if self.config["input_data"]["data_format"] == "csv":
-                self.data = LocalDataReaderCSV(
-                    self.config["input_data"], self.total_required_data
-                ).read()
+                # self.data = LocalDataReaderCSV(
+                #     self.config["input_data"], self.total_required_data
+                # ).read()
+                pass
             else:
                 raise ValueError("Wrong data_format")
 

@@ -1,6 +1,8 @@
 import os
-from typing import Any, Dict
+from functools import reduce
+from typing import Any, Dict, List
 
+import pyspark.sql as ps
 import yaml
 
 
@@ -35,3 +37,21 @@ def read_yaml(yaml_file_path: str) -> Dict[str, Any]:
         config = yaml.load(file, Loader=yaml.FullLoader)
 
     return config
+
+
+def combine_pyspark_dfs(dfs: List[ps.DataFrame]) -> ps.DataFrame:
+    """
+    Combine multiple pyspark dataframes of same schema into one
+
+    Parameters
+    ----------
+    dfs : List[ps.DataFrame]
+        List of pyspark dataframes
+
+    Returns
+    -------
+    ps.DataFrame
+        Combined pyspark dataframe
+    """
+
+    return reduce(lambda df1, df2: df1.union(df2.select(df1.columns)), dfs)
