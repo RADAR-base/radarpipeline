@@ -253,7 +253,7 @@ class SparkCSVDataReader(DataReader):
 
     def _initialize_spark_session(self) -> ps.SparkSession:
         spark = SparkSession.builder.master("local").appName("mock").getOrCreate()
-        spark.conf.set("spark.sql.execution.arrow.enabled", "true")
+        spark.conf.set("spark.sql.execution.arrow.pyspark.enabled", "true")
         spark.sparkContext.setLogLevel("ERROR")
         logger.info("Spark Session created")
         return spark
