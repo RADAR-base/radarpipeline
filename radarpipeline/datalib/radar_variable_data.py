@@ -2,7 +2,7 @@ from typing import List
 
 import pandas as pd
 import pyspark.sql as ps
-from pyspark.sql.functions import to_date
+import pyspark.sql.functions as f
 
 from radarpipeline.datalib.data import Data
 
@@ -30,13 +30,13 @@ class RadarVariableData(Data):
     def _preprocess_data(self) -> None:
         if "value.time" in self._data.columns:
             self._data = self._data.withColumn(
-                "`value.time`", to_date(self._data["`value.time`"])
+                "value.time", f.to_date(self._data["`value.time`"])
             )
         if "value.timeReceived" in self._data.columns:
             self._data = self._data.withColumn(
-                "`value.timeReceived`", to_date(self._data["`value.timeReceived`"])
+                "value.timeReceived", f.to_date(self._data["`value.timeReceived`"])
             )
         if "value.dateTime" in self._data.columns:
             self._data = self._data.withColumn(
-                "`value.dateTime`", to_date(self._data["`value.dateTime`"])
+                "value.dateTime", f.to_date(self._data["`value.dateTime`"])
             )

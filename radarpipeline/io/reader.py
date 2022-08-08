@@ -218,7 +218,11 @@ class SparkCSVDataReader(DataReader):
                 schema_reader = AvroSchemaReader(absolute_dirname)
 
                 if schema_reader.is_schema_present():
-                    schema = schema_reader.get_schema()
+                    logger.info("Schema found")
+                else:
+                    logger.info("Schema not found, inferring from data file")
+
+                schema = schema_reader.get_schema()
                 variable_data = self._read_variable_data_files(data_files, schema)
 
                 if variable_data.get_data_size() > 0:
@@ -229,7 +233,11 @@ class SparkCSVDataReader(DataReader):
         radar_data = RadarData(user_data_arr)
         return radar_data
 
-    def _read_variable_data_files(self, data_files, schema=None) -> RadarVariableData:
+    def _read_variable_data_files(
+        self,
+        data_files,
+        schema=None,
+    ) -> RadarVariableData:
         if schema:
             df = self.spark.read.load(
                 data_files,
@@ -249,6 +257,9 @@ class SparkCSVDataReader(DataReader):
             )
 
         variable_data = RadarVariableData(df)
+        print(variable_data.get_data().summary().show())
+        print(variable_data.get_data().schema.json())
+
         return variable_data
 
     def _initialize_spark_session(self) -> ps.SparkSession:
@@ -269,15 +280,13 @@ class AvroSchemaReader(SchemaReader):
 
         if os.path.exists(schema_file):
             self.schema_file = schema_file
-            logger.info("Schema found")
             return True
 
-        logger.info("Schema not found, inferring from data file")
         return False
 
     def _get_field(self, data_type: Union[str, Dict]):
         if data_type == "boolean":
-            return StringType()
+            return IntegerType()
         elif data_type == "int":
             return IntegerType()
         elif data_type == "long":
@@ -310,6 +319,6 @@ class AvroSchemaReader(SchemaReader):
             name = value["name"]
             typ = value["type"]
             field_type = self._get_field(typ)
-            schema_fields.append(StructField(f"value.{name}", field_type))
+            schema_fields.append(StructField(f"value.{name}", field_type, True))
 
         return StructType(schema_fields)
