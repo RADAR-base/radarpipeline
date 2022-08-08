@@ -5,9 +5,11 @@ import os
 import sys
 from ctypes import util
 from typing import List, Union
+from unittest import mock
 
 import numpy as np
 import pandas as pd
+from git import Repo
 
 from radarpipeline.common import utils
 from radarpipeline.features import Feature, FeatureGroup
@@ -69,6 +71,7 @@ class Project:
         elif self.config["input_data"]["data_location"] == "mock":
             if "data_format" not in self.config["input_data"]:
                 raise ValueError("data_format is not present in the config file")
+            self._update_submodules()
 
         else:
             raise ValueError("Incorrect data_location specified in the config file")
@@ -105,6 +108,21 @@ class Project:
             raise ValueError("features array is empty")
 
         logger.info("Config file validated successfully")
+
+    def _update_submodules(self) -> None:
+        repo = Repo(
+            os.path.dirname(os.path.abspath(__file__)),
+            search_parent_directories=True,
+        )
+        sms = repo.submodules
+        try:
+            mock_data_submodule = sms["mock-data"]
+        except IndexError:
+            raise ValueError("mock-data submodule not found in the repository")
+        if not (mock_data_submodule.exists() and mock_data_submodule.module_exists()):
+            logger.info("Mock data submodule not found. Cloning it...")
+            repo.git.submodule("update", "--init", "--recursive")
+            logger.info("Mock data input cloned")
 
     def _get_feature_groups_from_filepath(self, filepath):
         # convert path to python import module

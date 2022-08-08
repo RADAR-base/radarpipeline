@@ -18,6 +18,12 @@ A python feature generation and visualization package use with RADAR project dat
     $ cd radar-pipeline
     ```
 
+-   Checkout the development branch:
+
+    ```bash
+    $ git checkout dev
+    ```
+
 -   Create a [virtual environment](https://virtualenv.pypa.io/en/latest/installation.html) and activate it.
 
     -   Install the virtualenv package:
