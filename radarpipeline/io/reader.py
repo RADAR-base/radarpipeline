@@ -9,7 +9,8 @@ from functools import partial, partialmethod
 from itertools import repeat
 from multiprocessing.pool import Pool
 from operator import is_not
-from typing import Dict, List, Tuple, Union
+from pprint import pprint
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import pandas as pd
 import pysftp
@@ -117,69 +118,6 @@ logger = logging.getLogger(__name__)
 #         return df
 
 
-# class LocalDataReaderCSV(DataReader):
-#     def __init__(self, config: Dict, required_data: List[str]):
-#         super().__init__(config)
-#         self.required_data = required_data
-#         self.source_path = config.get("local_directory", "")
-
-#     def read(self) -> RadarData:
-#         user_data_arr = {}
-#         # check if source path directory exists
-#         if not os.path.isdir(self.source_path):
-#             raise Exception(f"Path does not exist: {self.source_path}")
-
-#         for uid in tqdm(os.listdir(self.source_path)):
-#             if uid[0] == ".":
-#                 continue
-#             variable_data_arr = {}
-#             for dirname in self.required_data:
-#                 file_data_arr = {}
-#                 if dirname not in os.listdir(os.path.join(self.source_path, uid)):
-#                     continue
-#                 data_files = os.listdir(os.path.join(self.source_path, uid, dirname))
-#                 # read files parallel using pool
-#                 with Pool(8) as p:
-#                     file_data_arr = self._tuples_to_dict(
-#                         p.starmap(
-#                             self._read_data_file,
-#                             zip(
-#                                 repeat(os.path.join(self.source_path, uid, dirname)),
-#                                 data_files,
-#                             ),
-#                         )
-#                     )
-#                 if len(file_data_arr) > 0:
-#                     variable_data_arr[dirname] = RadarVariableData(file_data_arr)
-#             user_data_arr[uid] = RadarUserData(variable_data_arr)
-#         return RadarData(user_data_arr)
-
-#     def _read_data_file(self, dirs, data_file):
-#         if data_file.split(".")[-1] == "gz":
-#             dt = data_file.split(".")[0]
-#             if len(dt.split("_")) != 2:
-#                 return (None, None)
-#             try:
-#                 return (
-#                     datetime.strptime(dt, "%Y%m%d_%H%M"),
-#                     RadarFileData(self._read_csv(os.path.join(dirs, data_file))),
-#                 )
-#             except EmptyDataError:
-#                 return (None, None)
-
-#     def _read_csv(self, path):
-#         df = pd.read_csv(path)
-#         return df
-
-#     def _tuples_to_dict(self, tuple_list):
-#         di = dict()
-#         for element in tuple_list:
-#             if element is not None:
-#                 a, b = element
-#                 di[a] = b
-#         return di
-
-
 class SparkCSVDataReader(DataReader):
     def __init__(self, config: Dict, required_data: List[str]):
         super().__init__(config)
@@ -219,10 +157,10 @@ class SparkCSVDataReader(DataReader):
 
                 if schema_reader.is_schema_present():
                     logger.info("Schema found")
+                    schema = schema_reader.get_schema()
                 else:
                     logger.info("Schema not found, inferring from data file")
 
-                schema = schema_reader.get_schema()
                 variable_data = self._read_variable_data_files(data_files, schema)
 
                 if variable_data.get_data_size() > 0:
@@ -235,8 +173,8 @@ class SparkCSVDataReader(DataReader):
 
     def _read_variable_data_files(
         self,
-        data_files,
-        schema=None,
+        data_files: List[str],
+        schema: Optional[StructType] = None,
     ) -> RadarVariableData:
         if schema:
             df = self.spark.read.load(
@@ -257,20 +195,34 @@ class SparkCSVDataReader(DataReader):
             )
 
         variable_data = RadarVariableData(df)
-        print(variable_data.get_data().summary().show())
-        print(variable_data.get_data().schema.json())
 
         return variable_data
 
     def _initialize_spark_session(self) -> ps.SparkSession:
         spark = SparkSession.builder.master("local").appName("mock").getOrCreate()
+
+        # Enable Apache Arrow for optimizations in Spark to Pandas conversion
         spark.conf.set("spark.sql.execution.arrow.pyspark.enabled", "true")
+        # Fallback to use non-Arrow conversion in case of errors
+        spark.conf.set("spark.sql.execution.arrow.pyspark.fallback.enabled", "true")
+        # For further reading: https://spark.apache.org/docs/3.0.1/sql-pyspark-pandas-with-arrow.html
+
         spark.sparkContext.setLogLevel("ERROR")
         logger.info("Spark Session created")
+
         return spark
 
 
 class AvroSchemaReader(SchemaReader):
+    data_type_mapping = {
+        "boolean": BooleanType(),
+        "int": IntegerType(),
+        "long": LongType(),
+        "float": FloatType(),
+        "double": DoubleType(),
+        "string": StringType(),
+    }
+
     def __init__(self, schema_dir: str) -> None:
         super().__init__(schema_dir)
 
@@ -285,18 +237,8 @@ class AvroSchemaReader(SchemaReader):
         return False
 
     def _get_field(self, data_type: Union[str, Dict]):
-        if data_type == "boolean":
-            return IntegerType()
-        elif data_type == "int":
-            return IntegerType()
-        elif data_type == "long":
-            return LongType()
-        elif data_type == "float":
-            return FloatType()
-        elif data_type == "double":
-            return DoubleType()
-        elif data_type == "string":
-            return StringType()
+        if type(data_type) is str and data_type in self.data_type_mapping:
+            return self.data_type_mapping[data_type]
         elif type(data_type) is dict:
             return StringType()
         else:
@@ -321,4 +263,5 @@ class AvroSchemaReader(SchemaReader):
             field_type = self._get_field(typ)
             schema_fields.append(StructField(f"value.{name}", field_type, True))
 
-        return StructType(schema_fields)
+        schema = StructType(schema_fields)
+        return schema
