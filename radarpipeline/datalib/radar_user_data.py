@@ -7,6 +7,10 @@ from radarpipeline.datalib.radar_variable_data import RadarVariableData
 
 
 class RadarUserData(Data):
+    """
+    Class for reading data of a single user
+    """
+
     def __init__(self, data: Dict[str, RadarVariableData]) -> None:
         self._data = data
 
@@ -26,13 +30,39 @@ class RadarUserData(Data):
         return self._data.get(key, None)
 
     def _get_all_variables(self) -> List[str]:
+        """
+        Get all variables in the data of the user
+
+        Returns
+        -------
+        List[str]
+            The list of all variables in the data of the user
+        """
+
         return self.get_data_keys()
 
     def get_data_by_variable(
         self, variables: Union[str, List[str]], as_pandas: bool = False
     ) -> Union[List[Dict[str, RadarVariableData]], List[Dict[str, pd.DataFrame]]]:
+        """
+        Returns the data of the user for the given variables
+
+        Parameters
+        ----------
+        variables : Union[str, List[str]]
+            The variable(s) to get the data for
+        as_pandas : bool
+            Whether to return the data as pandas dataframes or the default pySpark dataframes
+
+        Returns
+        -------
+        Union[List[Dict[str, RadarVariableData]], List[Dict[str, pd.DataFrame]]]
+            The data of the user for the given variables
+        """
+
         if isinstance(variables, str):
             variables = [variables]
+
         all_variables = self._get_all_variables()
         variable_data_list = []
 

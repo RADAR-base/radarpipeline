@@ -8,6 +8,10 @@ from radarpipeline.datalib.data import Data
 
 
 class RadarVariableData(Data):
+    """
+    Class for reading data for a single variable of a single user
+    """
+
     def __init__(self, data: ps.DataFrame) -> None:
         self._data = data
         self._preprocess_data()
@@ -25,9 +29,22 @@ class RadarVariableData(Data):
         return self._data.count()
 
     def _get_data_as_pd(self) -> pd.DataFrame:
+        """
+        Converts a Spark DataFrame to a Pandas DataFrame
+
+        Returns
+        -------
+        pd.DataFrame
+            The data as a Pandas DataFrame
+        """
+
         return self._data.toPandas()
 
     def _preprocess_data(self) -> None:
+        """
+        Converts all time value columns to datetime format
+        """
+
         if "value.time" in self._data.columns:
             self._data = self._data.withColumn(
                 "value.time", f.to_date(self._data["`value.time`"])

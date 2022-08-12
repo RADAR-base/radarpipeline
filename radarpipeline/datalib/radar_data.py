@@ -9,6 +9,10 @@ from radarpipeline.datalib.radar_variable_data import RadarVariableData
 
 
 class RadarData(Data):
+    """
+    Class for reading the RADAR data
+    """
+
     def __init__(self, data: Dict[str, RadarUserData]) -> None:
         self._data = data
 
@@ -27,19 +31,45 @@ class RadarData(Data):
     def _get_data_by_key(self, key: str) -> Optional[RadarUserData]:
         return self._data.get(key, None)
 
-    def _get_all_user_ids(self):
+    def _get_all_user_ids(self) -> List[str]:
+        """
+        Get all user ids in the data of the RADAR data
+
+        Returns
+        -------
+        List[str]
+            The list of all user ids in the data of the RADAR data
+        """
+
         return self.get_data_keys()
 
     def get_combined_data_by_variable(
         self, variables: Union[str, List[str]], as_pandas: bool = False
     ) -> Union[List[Dict[str, RadarVariableData]], List[Dict[str, pd.DataFrame]]]:
+        """
+        Returns the combined data of the RADAR data for the given variables
+
+        Parameters
+        ----------
+        variables : Union[str, List[str]]
+            The variable(s) to get the data for
+        as_pandas : bool
+            Whether to return the data as pandas dataframes or the default pySpark dataframes
+
+        Returns
+        -------
+        Union[List[Dict[str, RadarVariableData]], List[Dict[str, pd.DataFrame]]]
+            The combined data of the RADAR data for the given variables
+        """
+
         if isinstance(variables, str):
             variables = [variables]
-        all_user_ids = self._get_all_user_ids()
 
+        all_user_ids = self._get_all_user_ids()
         variable_data_list = []
         variable_dict = {}
 
+        # Store the data of the given variables of each user in a dictionary
         for user_id in all_user_ids:
             user_data = self._get_data_by_key(user_id)
             if user_data is not None:
@@ -50,6 +80,7 @@ class RadarData(Data):
                         if var_data is not None:
                             variable_dict.get(var, []).append(var_data.get_data())
 
+        # Combine the all data for each variable
         for var in variable_dict:
             if len(variable_dict[var]) > 0:
                 combined_df = combine_pyspark_dfs(variable_dict[var])
@@ -62,8 +93,25 @@ class RadarData(Data):
     def get_data_by_user_id(
         self, user_ids: Union[str, List[str]], as_pandas: bool = False
     ) -> Union[List[RadarUserData], List[Dict[str, Dict[str, pd.DataFrame]]]]:
+        """
+        Returns the data of the RADAR data for the given user ids
+
+        Parameters
+        ----------
+        user_ids : Union[str, List[str]]
+            The user id(s) to get the data for
+        as_pandas : bool
+            Whether to return the data as pandas dataframes or the default pySpark dataframes
+
+        Returns
+        -------
+        Union[List[RadarUserData], List[Dict[str, Dict[str, pd.DataFrame]]]]
+            The data of the RADAR data for the given user ids
+        """
+
         if isinstance(user_ids, str):
             user_id = [user_ids]
+
         all_user_ids = self._get_all_user_ids()
         user_data_list = []
 
