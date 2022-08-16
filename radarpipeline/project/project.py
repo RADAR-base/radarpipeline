@@ -2,25 +2,32 @@ import importlib
 import inspect
 import logging
 import os
-import sys
-from ctypes import util
-from typing import List, Union
+import pathlib
+from typing import Any, Dict, List, Union
 
-import numpy as np
-import pandas as pd
+from git.repo import Repo
 
 from radarpipeline.common import utils
 from radarpipeline.features import Feature, FeatureGroup
-from radarpipeline.io import LocalDataReaderCSV, SFTPDataReaderCSV, SparkCSVDataReader
+from radarpipeline.io import SparkCSVDataReader
 
 logger = logging.getLogger(__name__)
 
 
 class Project:
+    def __init__(self, input_data: Union[str, dict]) -> None:
+        """
+        Initialize the project with the data from the config file, or a config dict
 
-    # Init takes yaml or dict as an input_data
-    def __init__(self, input_data: Union[str, dict]):
-        self.FEATURE_PATH = os.path.join("radarpipeline", "features", "features")
+        Parameters
+        ---------
+        input_data: Union[str, dict]
+            Path to the config file or a dict containing the config
+        """
+
+        self.FEATURE_PATH = os.path.abspath(
+            os.path.join("radarpipeline", "features", "features")
+        )
         self.input_data = input_data
         self.config = self._get_config()
         self._validate_config()
@@ -28,29 +35,49 @@ class Project:
         self.total_required_data = self._get_total_required_data()
         self.features = {}
 
-    def _get_config(self):
-        # Read the yaml file
+    def _get_config(self) -> Dict[str, Any]:
+        """
+        Reads the config and returns it as a dictionary
+
+        Returns
+        -------
+        Dict[str, Any]
+            Config dictionary
+        """
+
         if isinstance(self.input_data, str):
             config = utils.read_yaml(self.input_data)
-
         elif isinstance(self.input_data, dict):
             config = self.input_data
-
         else:
             raise ValueError("Wrong input data type. Should be yaml file path or dict.")
 
         logger.info("Config file read successfully")
-
         return config
 
-    def _validate_config(self):
-        # Check if all the required keys are present
+    def _validate_config(self) -> None:
+        """
+        Validates the config to check if all the keys are present
+        """
+
         required_keys = ["input_data", "project", "features", "output_data"]
         for key in required_keys:
             if key not in self.config:
-                raise ValueError(f"Key not present in the config file: {key}")
+                raise ValueError(f"Key not present in the config: {key}")
 
-        #  check if input_data satisfies all the conditions
+        self._validate_input()
+        self._validate_output()
+
+        if len(self.config["features"]) == 0:
+            raise ValueError("features array cannot be empty")
+
+        logger.info("Config file validated successfully")
+
+    def _validate_input(self) -> None:
+        """
+        Validates the input data config
+        """
+
         if self.config["input_data"]["data_location"] == "sftp":
             sftp_config_keys = [
                 "sftp_host",
@@ -60,20 +87,32 @@ class Project:
             ]
             for key in sftp_config_keys:
                 if key not in self.config["input_data"]:
-                    raise ValueError(f"Key not present in the config file: {key}")
+                    raise ValueError(f"Key not present in the config: {key}")
 
         elif self.config["input_data"]["data_location"] == "local":
             if "local_directory" not in self.config["input_data"]:
-                raise ValueError("local_directory is not present in the config file")
+                raise ValueError("Key not present in the config: local_directory")
+            else:
+                # Check if local_directory is absolute path. If not, then set it.
+                local_directory = self.config["input_data"]["local_directory"]
+                local_directory = self._get_absolute_path(local_directory)
+                if not os.path.exists(local_directory):
+                    raise ValueError(f"Path does not exist: {local_directory}")
+                self.config["input_data"]["local_directory"] = local_directory
 
         elif self.config["input_data"]["data_location"] == "mock":
             if "data_format" not in self.config["input_data"]:
-                raise ValueError("data_format is not present in the config file")
+                raise ValueError("Key not present in the config file: data_format")
+            self._update_mock_data()
 
         else:
-            raise ValueError("Incorrect data_location specified in the config file")
+            raise ValueError("Invalid value for the key: data_location")
 
-        # Check if output_data satisfies all the conditions
+    def _validate_output(self) -> None:
+        """
+        Validates the output data config
+        """
+
         if self.config["output_data"]["output_location"] == "postgres":
             postgres_config_keys = [
                 "postgres_host",
@@ -84,73 +123,79 @@ class Project:
             ]
             for key in postgres_config_keys:
                 if key not in self.config["output_data"]:
-                    raise ValueError(f"Key not present in the config file: {key}")
+                    raise ValueError(f"Key not present in the config: {key}")
 
         elif self.config["output_data"]["output_location"] == "local":
             if "output_directory" not in self.config["output_data"]:
-                raise ValueError("output_directory is not present in the config file")
+                raise ValueError("Key not present in the config: output_directory")
+            else:
+                # Check if output_directory is absolute path. If not, then set it.
+                output_directory = self.config["output_data"]["output_directory"]
+                output_directory = self._get_absolute_path(output_directory)
+                if not os.path.exists(output_directory):
+                    raise ValueError(f"Path does not exist: {output_directory}")
+                self.config["output_data"]["output_directory"] = output_directory
 
             # Raise error if output_format it not csv or xlsx
             if self.config["output_data"]["output_format"] not in ["csv", "xlsx"]:
-                raise ValueError("Wrong output_format")
+                raise ValueError(
+                    "Invalid value for key: output_format\nHas to be csv or xlsx"
+                )
 
         elif self.config["output_data"]["output_location"] == "mock":
             pass
 
         else:
-            raise ValueError("output_location is not present in the config file")
+            raise ValueError("Key not present in the config: output_location")
 
-        # Check features array at least has one element
-        if len(self.config["features"]) == 0:
-            raise ValueError("features array is empty")
+    def _get_absolute_path(self, path: str) -> str:
+        """
+        Returns the absolute path of the path
 
-        logger.info("Config file validated successfully")
+        Parameters
+        ----------
+        path: str
+            Path to be converted to absolute path
 
-    def _get_feature_groups_from_filepath(self, filepath):
-        # convert path to python import module
-        feature_name = filepath.replace("/", ".")
-        feature_name = feature_name.replace(".py", "")
-        feature_name = feature_name.replace("\\", ".")
-        # import the feature
-        feature_module = importlib.import_module(feature_name)
-        # get the feature class
-        feature_classes = []
+        Returns
+        -------
+        str
+            Absolute path of the path
+        """
 
-        for name, obj in inspect.getmembers(feature_module):
-            if inspect.isclass(obj) and obj != Feature and obj != FeatureGroup:
-                if isinstance(obj(), FeatureGroup):
-                    feature_classes.append(obj())
+        if not os.path.isabs(path):
+            pipeline_dir = pathlib.Path(__file__).parent.parent.parent.resolve()
+            path = os.path.join(pipeline_dir, path)
+        return path
 
-        return feature_classes
+    def _update_mock_data(self) -> None:
+        """
+        Updates the mock data submodule of the project
+        """
 
-    def _look_up_feature(self, feature_name: str) -> List[FeatureGroup]:
-        """Look up the feature group"""
-
-        # check if feature name is a path
-        if os.path.exists(feature_name):
-            feature_classes = self._get_feature_groups_from_filepath(feature_name)
-
-        else:
-            # iterate over the  features directory and list all the features classes
-            # If all_feature_classes does not exists then create it
-            if not hasattr(self, "all_feature_classes"):
-                for root, dirs, files in os.walk(self.FEATURE_PATH):
-                    for file in files:
-                        if file.endswith(".py"):
-                            self.all_feature_classes = (
-                                self._get_feature_groups_from_filepath(
-                                    os.path.join(root, file)
-                                )
-                            )
-            # search feature_name in all_feature_classes
-            for feature_class in self.all_feature_classes:
-                if feature_class.name == feature_name:
-                    return [feature_class]
-            raise ValueError(f"Feature {feature_name} not found")
-        return feature_classes
+        repo = Repo(
+            os.path.dirname(os.path.abspath(__file__)),
+            search_parent_directories=True,
+        )
+        sms = repo.submodules
+        try:
+            mock_data_submodule = sms["mock-data"]
+        except IndexError:
+            raise ValueError("mock-data submodule not found in the repository")
+        if not (mock_data_submodule.exists() and mock_data_submodule.module_exists()):
+            logger.info("Mock data submodule not found. Cloning it...")
+            repo.git.submodule("update", "--init", "--recursive")
+            logger.info("Mock data input cloned")
 
     def _look_up_features(self) -> List[FeatureGroup]:
-        """Look up the features group"""
+        """
+        Look up the all the feature groups from the config
+
+        Returns
+        -------
+        List[FeatureGroup]
+            List of all the feature groups
+        """
 
         feature_names = self.config.get("features", [])
         feature_groups = []
@@ -165,8 +210,91 @@ class Project:
 
         return feature_groups
 
+    def _look_up_feature(self, feature_name: str) -> List[FeatureGroup]:
+        """
+        Look up the feature group from filepath or name
+
+        Parameters
+        ----------
+        feature_name: str
+            Name of the feature group to look up
+
+        Returns
+        -------
+        List[FeatureGroup]
+            List of feature group(s)
+        """
+
+        feature_group_classes = []
+
+        # Check if feature_name is a valid feature group path
+        absolute_feature_path = self._get_absolute_path(feature_name)
+        if os.path.exists(absolute_feature_path):
+            feature_group_classes = self._get_feature_groups_from_filepath(
+                absolute_feature_path
+            )
+        else:
+            # Iterate over the features directory and list all the features classes
+            # If all_feature_classes does not exists then create it
+            if not hasattr(self, "all_feature_classes"):
+                for root, dirs, files in os.walk(self.FEATURE_PATH):
+                    for file in files:
+                        if file.endswith(".py"):
+                            self.all_feature_classes = (
+                                self._get_feature_groups_from_filepath(
+                                    os.path.join(root, file)
+                                )
+                            )
+            # Search feature_name in all_feature_classes
+            for feature_class in self.all_feature_classes:
+                if feature_class.name == feature_name:
+                    feature_group_classes.append(feature_class)
+
+        if len(feature_group_classes) == 0:
+            raise ValueError(f"Feature not found: {feature_name}")
+
+        return feature_group_classes
+
+    def _get_feature_groups_from_filepath(self, filepath: str) -> List[Any]:
+        """
+        Gets the feature group classes from the filepath
+
+        Parameters
+        ----------
+        filepath: str
+            Filepath of the feature group class
+
+        Returns
+        -------
+        List[Any]
+            List of feature group classes
+        """
+
+        # Convert filepath to module path
+        filepath_without_extension = filepath.replace(".py", "")
+        feature_module_name = ".".join(filepath_without_extension.split(os.sep))
+
+        # Import the feature module
+        feature_module = importlib.import_module(feature_module_name)
+
+        # Get the feature group class
+        feature_groups = []
+        for name, obj in inspect.getmembers(feature_module):
+            if inspect.isclass(obj) and obj != Feature and obj != FeatureGroup:
+                if isinstance(obj(), FeatureGroup):
+                    feature_groups.append(obj())
+
+        return feature_groups
+
     def _get_total_required_data(self) -> List[str]:
-        """Get the total required data"""
+        """
+        Get the total required data fromm the feature groups
+
+        Returns
+        -------
+        List[str]
+            List of all the required data
+        """
 
         total_required_data = set()
         for feature_group in self.feature_groups:
@@ -174,22 +302,28 @@ class Project:
 
         return list(total_required_data)
 
-    def fetch_data(self):
+    def fetch_data(self) -> None:
+        """
+        Fetches the data from the data source
+        """
+
         if self.config["input_data"]["data_location"] == "sftp":
             if self.config["input_data"]["data_format"] == "csv":
-                self.data = SFTPDataReaderCSV(
-                    self.config["input_data"], self.total_required_data
-                ).read()
+                # self.data = SFTPDataReaderCSV(
+                #     self.config["input_data"], self.total_required_data
+                # ).read()
+                pass
             else:
-                raise ValueError("Wrong data_format")
+                raise ValueError("Wrong data format")
 
         elif self.config["input_data"]["data_location"] == "local":
             if self.config["input_data"]["data_format"] == "csv":
-                self.data = LocalDataReaderCSV(
+                self.data = SparkCSVDataReader(
                     self.config["input_data"], self.total_required_data
                 ).read()
+                pass
             else:
-                raise ValueError("Wrong data_format")
+                raise ValueError("Wrong data format")
 
         elif self.config["input_data"]["data_location"] == "mock":
             if self.config["input_data"]["data_format"] == "csv":
@@ -202,11 +336,15 @@ class Project:
                 ]
                 self.data = SparkCSVDataReader(mock_config, mock_required_data).read()
             else:
-                raise ValueError("Wrong data_format")
+                raise ValueError("Wrong data format")
 
         else:
-            raise ValueError("Wrong data_location")
+            raise ValueError("Wrong data location")
 
-    def compute_features(self):
+    def compute_features(self) -> None:
+        """
+        Computes the features from the ingested data
+        """
+
         for feature_group in self.feature_groups:
             self.features[feature_group] = feature_group.compute_features(self.data)

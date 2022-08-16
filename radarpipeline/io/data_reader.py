@@ -5,6 +5,10 @@ from radarpipeline.datalib import Data
 
 
 class DataReader(ABC):
+    """
+    Abstract class for reading the RADAR data
+    """
+
     config: Dict
 
     def __init__(self, config: Dict) -> None:
@@ -16,6 +20,10 @@ class DataReader(ABC):
 
 
 class SchemaReader(ABC):
+    """
+    Abstract class for reading the RADAR data schema
+    """
+
     schema_dir: str
     schema_file: str
 
