@@ -246,6 +246,9 @@ class SparkCSVDataReader(DataReader):
                 encoding="UTF-8",
             )
 
+        # To print the dataframe stats for cross-checking
+        print(df.describe().show())
+
         variable_data = RadarVariableData(df)
 
         return variable_data
