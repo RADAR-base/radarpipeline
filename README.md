@@ -2,6 +2,7 @@
 
 <p align="center">
 <a href="https://github.com/RADAR-base/radar-pipeline/issues"><img alt="GitHub issues" src="https://img.shields.io/github/issues/RADAR-base/radar-pipeline"></a>
+<a href="https://github.com/thepushkarp/radar-pipeline/pulls"><img alt="GitHub pull requests" src="https://img.shields.io/github/issues-pr/radar-base/radar-pipeline"></a>
 <a href="https://github.com/RADAR-base/radar-pipeline/network"><img alt="GitHub forks" src="https://img.shields.io/github/forks/RADAR-base/radar-pipeline"></a>
 <a href="https://github.com/RADAR-base/radar-pipeline/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/RADAR-base/radar-pipeline"></a>
 <a href="https://github.com/RADAR-base/radar-pipeline/blob/main/LICENSE"><img alt="GitHub license" src="https://img.shields.io/github/license/RADAR-base/radar-pipeline"></a>
@@ -27,6 +28,7 @@ Wiki resources:
 ## How to run
 
 > **Note**
+>
 > If you are using Windows, please install Spark and set environment variables as mentioned [here](https://sparkbyexamples.com/spark/apache-spark-installation-on-windows/) before going through the installation below. You'll need to set the environment variables given [here](https://spark.apache.org/docs/1.6.0/configuration.html#environment-variables).
 
 -   Clone the repository (with all the submodules):
