@@ -4,6 +4,8 @@ input_data:
 
 project:
     project_name: mock_project
+    description: mock_description
+    version: mock_version
 
 features:
     - 'mock'
