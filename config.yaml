@@ -1,14 +1,17 @@
-input_data:
-    data_location: mock
-    data_format: csv
-
 project:
     project_name: mock_project
     description: mock_description
     version: mock_version
 
+input_data:
+    data_location: mock
+    local_directory: mock-data/mock-data
+    data_format: csv
+
 features:
-    - 'mock'
+    - location: 'https://github.com/RADAR-base-Analytics/mock-features'
+      feature_groups:
+          - MockFeatureGroup
 
 output_data:
     output_location: mock

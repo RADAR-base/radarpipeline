@@ -1,8 +1,10 @@
 import os
 from functools import reduce
 from typing import Any, Dict, List
+from urllib.parse import urlparse
 
 import pyspark.sql as ps
+import requests
 import yaml
 
 
@@ -55,3 +57,53 @@ def combine_pyspark_dfs(dfs: List[ps.DataFrame]) -> ps.DataFrame:
     """
 
     return reduce(lambda df1, df2: df1.union(df2.select(df1.columns)), dfs)
+
+
+def is_valid_github_path(path: str) -> bool:
+    """
+    Check if the current path is a valid github path
+
+    Parameters
+    ----------
+    path : str
+        Path to check
+    Returns
+    -------
+    bool
+        True if the path is valid, False otherwise
+    """
+
+    parsed = urlparse(path)
+    if parsed.scheme not in ["https", "http"] or parsed.netloc != "github.com":
+        return False
+
+    if requests.head(path, allow_redirects=True).status_code != 200:
+        return False
+
+    return True
+
+
+def get_repo_name_from_url(url: str) -> str:
+    """
+    Return the name of the repository from the url
+    Reference: https://stackoverflow.com/a/55137835/10307491
+
+    Parameters
+    ----------
+    url : str
+        Url of the repository
+
+    Returns
+    -------
+    str
+        Name of the repository
+    """
+    last_slash_index = url.rfind("/")
+    last_suffix_index = url.rfind(".git")
+    if last_suffix_index < 0:
+        last_suffix_index = len(url)
+
+    if last_slash_index < 0 or last_suffix_index <= last_slash_index:
+        raise Exception(f"Badly formatted url {url}")
+
+    return url[last_slash_index + 1 : last_suffix_index]

@@ -60,16 +60,14 @@ class Project:
         Validates the config to check if all the keys are present
         """
 
-        required_keys = ["input_data", "project", "features", "output_data"]
+        required_keys = ["project", "input_data", "features", "output_data"]
         for key in required_keys:
             if key not in self.config:
                 raise ValueError(f"Key not present in the config: {key}")
 
         self._validate_input()
+        self._validate_features()
         self._validate_output()
-
-        if len(self.config["features"]) == 0:
-            raise ValueError("features array cannot be empty")
 
         logger.info("Config file validated successfully")
 
@@ -107,6 +105,46 @@ class Project:
 
         else:
             raise ValueError("Invalid value for the key: data_location")
+
+    def _validate_features(self) -> None:
+        """
+        Validates the features config
+        """
+
+        if len(self.config["features"]) == 0:
+            raise ValueError("features array cannot be empty")
+
+        for index, feature in enumerate(self.config["features"]):
+            if "location" not in feature:
+                raise ValueError(
+                    f"Key not present in the config: location at index {index}"
+                )
+
+            feature_location = feature["location"]
+
+            if utils.is_valid_github_path(feature_location):
+                repo_name = utils.get_repo_name_from_url(feature_location)
+                cache_dir = os.path.join(
+                    os.path.expanduser("~"), ".cache", "radarpipeline", repo_name
+                )
+
+                if os.path.exists(cache_dir):
+                    repo = Repo(cache_dir)
+                    repo.git.reset("--hard")
+                    repo.git.clean("-xdf")
+                    repo.remotes.origin.pull()
+                else:
+                    Repo.clone_from(feature_location, cache_dir)
+
+                feature_location = cache_dir
+                logger.info(f"Using feature from cache: {feature_location}")
+            else:
+                feature_location = os.path.expanduser(feature_location)
+                if not os.path.isdir(feature_location):
+                    raise ValueError(f"Invalid feature location: {feature_location}")
+                logger.info(f"Using feature from local path: {feature_location}")
+
+            self.config["features"][index]["location"] = feature_location
 
     def _validate_output(self) -> None:
         """
