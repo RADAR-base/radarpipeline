@@ -19,7 +19,7 @@ class Feature(ABC):
     def __str__(self) -> str:
         return self.name
 
-    def get_required_data(self):
+    def get_required_data(self) -> List[str]:
         return self.required_input_data
 
     @abstractmethod

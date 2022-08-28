@@ -25,13 +25,13 @@ class Project:
             Path to the config file or a dict containing the config
         """
 
-        self.FEATURE_PATH = os.path.abspath(
+        self.feature_path = os.path.abspath(
             os.path.join("radarpipeline", "features", "features")
         )
         self.input_data = input_data
         self.config = self._get_config()
         self._validate_config()
-        self.feature_groups = self._look_up_features()
+        self.feature_groups = self._get_feature_groups()
         self.total_required_data = self._get_total_required_data()
         self.features = {}
 
@@ -118,6 +118,16 @@ class Project:
             if "location" not in feature:
                 raise ValueError(
                     f"Key not present in the config: location at index {index}"
+                )
+
+            if "feature_group" not in feature:
+                raise ValueError(
+                    f"Key not present in the config: feature_group at index {index}"
+                )
+
+            if len(feature["feature_group"]) == 0:
+                raise ValueError(
+                    f"feature_group array cannot be empty at index {index}"
                 )
 
             feature_location = feature["location"]
@@ -225,9 +235,9 @@ class Project:
             repo.git.submodule("update", "--init", "--recursive")
             logger.info("Mock data input cloned")
 
-    def _look_up_features(self) -> List[FeatureGroup]:
+    def _get_feature_groups(self) -> List[FeatureGroup]:
         """
-        Look up the all the feature groups from the config
+        Get all the feature groups from the config
 
         Returns
         -------
@@ -235,27 +245,27 @@ class Project:
             List of all the feature groups
         """
 
-        feature_names = self.config.get("features", [])
-        feature_groups = []
+        features = self.config.get("features", [])
+        feature_groups = set()
 
-        if "mock" in feature_names:
+        if "mock" in features:
             logger.info("Using mock features")
         else:
-            for feature_name in feature_names:
-                feature_groups += self._look_up_feature(feature_name)
+            for feature in features:
+                feature_groups.add(self._get_feature_group(feature))
             logger.info(f"Number of feature groups found: {len(feature_groups)}")
-            logger.info(f"Feature groups: {feature_groups}")
+            logger.debug(f"List of Feature groups: {feature_groups}")
 
-        return feature_groups
+        return list(feature_groups)
 
-    def _look_up_feature(self, feature_name: str) -> List[FeatureGroup]:
+    def _get_feature_group(self, feature_name: dict) -> List[FeatureGroup]:
         """
-        Look up the feature group from filepath or name
+        Get feature group from filepath or name
 
         Parameters
         ----------
-        feature_name: str
-            Name of the feature group to look up
+        feature_name: dict
+            Feature to get from the specified location
 
         Returns
         -------
@@ -275,7 +285,7 @@ class Project:
             # Iterate over the features directory and list all the features classes
             # If all_feature_classes does not exists then create it
             if not hasattr(self, "all_feature_classes"):
-                for root, dirs, files in os.walk(self.FEATURE_PATH):
+                for root, dirs, files in os.walk(self.feature_path):
                     for file in files:
                         if file.endswith(".py"):
                             self.all_feature_classes = (
@@ -345,16 +355,7 @@ class Project:
         Fetches the data from the data source
         """
 
-        if self.config["input_data"]["data_location"] == "sftp":
-            if self.config["input_data"]["data_format"] == "csv":
-                # self.data = SFTPDataReaderCSV(
-                #     self.config["input_data"], self.total_required_data
-                # ).read()
-                pass
-            else:
-                raise ValueError("Wrong data format")
-
-        elif self.config["input_data"]["data_location"] == "local":
+        if self.config["input_data"]["data_location"] == "local":
             if self.config["input_data"]["data_format"] == "csv":
                 self.data = SparkCSVDataReader(
                     self.config["input_data"], self.total_required_data
