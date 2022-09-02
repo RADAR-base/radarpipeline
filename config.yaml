@@ -9,7 +9,7 @@ input_data:
     data_format: csv
 
 features:
-    - location: 'https://github.com/RADAR-base-Analytics/mock-features'
+    - location: 'https://github.com/RADAR-base-Analytics/mockfeatures'
       feature_groups:
           - MockFeatureGroup
 
