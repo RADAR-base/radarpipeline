@@ -1,11 +1,11 @@
 <h1 align="center">RADAR Pipeline</h1>
 
 <p align="center">
-<a href="https://github.com/RADAR-base/radar-pipeline/issues"><img alt="GitHub issues" src="https://img.shields.io/github/issues/RADAR-base/radar-pipeline"></a>
-<a href="https://github.com/thepushkarp/radar-pipeline/pulls"><img alt="GitHub pull requests" src="https://img.shields.io/github/issues-pr/radar-base/radar-pipeline"></a>
-<a href="https://github.com/RADAR-base/radar-pipeline/network"><img alt="GitHub forks" src="https://img.shields.io/github/forks/RADAR-base/radar-pipeline"></a>
-<a href="https://github.com/RADAR-base/radar-pipeline/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/RADAR-base/radar-pipeline"></a>
-<a href="https://github.com/RADAR-base/radar-pipeline/blob/main/LICENSE"><img alt="GitHub license" src="https://img.shields.io/github/license/RADAR-base/radar-pipeline"></a>
+<a href="https://github.com/RADAR-base/radarpipeline/issues"><img alt="GitHub issues" src="https://img.shields.io/github/issues/RADAR-base/radarpipeline"></a>
+<a href="https://github.com/thepushkarp/radarpipeline/pulls"><img alt="GitHub pull requests" src="https://img.shields.io/github/issues-pr/radar-base/radarpipeline"></a>
+<a href="https://github.com/RADAR-base/radarpipeline/network"><img alt="GitHub forks" src="https://img.shields.io/github/forks/RADAR-base/radarpipeline"></a>
+<a href="https://github.com/RADAR-base/radarpipeline/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/RADAR-base/radarpipeline"></a>
+<a href="https://github.com/RADAR-base/radarpipeline/blob/main/LICENSE"><img alt="GitHub license" src="https://img.shields.io/github/license/RADAR-base/radarpipeline"></a>
 <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
 </p>
 
@@ -15,15 +15,15 @@
 
 ## Wiki
 
-Please visit the [RADAR Pipeline Wiki](https://github.com/RADAR-base/radar-pipeline/wiki) to learn more about RADAR Pipeline.
+Please visit the [RADAR Pipeline Wiki](https://github.com/RADAR-base/radarpipeline/wiki) to learn more about RADAR Pipeline.
 
 Wiki resources:
 
--   [Home](https://github.com/RADAR-base/radar-pipeline/wiki)
--   [Installation](https://github.com/RADAR-base/radar-pipeline/wiki/Installation#installation-instructions)
--   [Contributor Guide](https://github.com/RADAR-base/radar-pipeline/wiki/Contributor-Guide)
--   [Mock Pipeline](https://github.com/RADAR-base/radar-pipeline/wiki/Mock-Pipeline)
--   [Configuration](https://github.com/RADAR-base/radar-pipeline/wiki/Configuration)
+-   [Home](https://github.com/RADAR-base/radarpipeline/wiki)
+-   [Installation](https://github.com/RADAR-base/radarpipeline/wiki/Installation#installation-instructions)
+-   [Contributor Guide](https://github.com/RADAR-base/radarpipeline/wiki/Contributor-Guide)
+-   [Mock Pipeline](https://github.com/RADAR-base/radarpipeline/wiki/Mock-Pipeline)
+-   [Configuration](https://github.com/RADAR-base/radarpipeline/wiki/Configuration)
 
 ## How to run
 
@@ -34,13 +34,13 @@ Wiki resources:
 -   Clone the repository (with all the submodules):
 
     ```bash
-    $ git clone --recurse-submodules https://github.com/RADAR-base/radar-pipeline.git
+    $ git clone --recurse-submodules https://github.com/RADAR-base/radarpipeline.git
     ```
 
--   Change the directory to `radar-pipeline`:
+-   Change the directory to `radarpipeline`:
 
     ```bash
-    $ cd radar-pipeline
+    $ cd radarpipeline
     ```
 
 -   Checkout the development branch:
@@ -93,4 +93,4 @@ Wiki resources:
 
 ## License
 
-This project is licensed under the [ Apache License, Version 2.0](https://github.com/RADAR-base/radar-pipeline/blob/main/LICENSE).
+This project is licensed under the [ Apache License, Version 2.0](https://github.com/RADAR-base/radarpipeline/blob/main/LICENSE).
