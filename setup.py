@@ -5,7 +5,7 @@ setup(
     name="radarpipeline",
     version="0.0.1",
     description="A python feature generation and visualization package use with RADAR project data.",
-    url="https://github.com/RADAR-base/radar-pipeline",
+    url="https://github.com/RADAR-base/radarpipeline",
     author="Heet Sankesara",
     author_email="heet.sankesara@kcl.ac.uk",
     packages=find_packages(),

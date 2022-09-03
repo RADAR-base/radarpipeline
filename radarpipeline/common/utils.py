@@ -55,8 +55,15 @@ def combine_pyspark_dfs(dfs: List[ps.DataFrame]) -> ps.DataFrame:
     ps.DataFrame
         Combined pyspark dataframe
     """
-
-    return reduce(lambda df1, df2: df1.union(df2.select(df1.columns)), dfs)
+    # TODO: Work on combining the dataframes
+    print(dfs[0].describe().show())
+    print("----------------")
+    print(dfs[1].describe().show())
+    df_comb = dfs[0].union(dfs[1].select(dfs[0].columns))
+    # temp = reduce(lambda df1, df2: df1.union(df2.select(df1.columns)), dfs)
+    # print(temp)
+    print(df_comb)
+    return dfs[0]
 
 
 def is_valid_github_path(path: str) -> bool:

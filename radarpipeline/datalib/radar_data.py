@@ -66,19 +66,26 @@ class RadarData(Data):
             variables = [variables]
 
         all_user_ids = self._get_all_user_ids()
+        print(all_user_ids)
         variable_data_list = []
         variable_dict = {}
 
         # Store the data of the given variables of each user in a dictionary
+        # TODO: Ensure that combining DFs work
         for user_id in all_user_ids:
             user_data = self._get_data_by_key(user_id)
+            print(user_data)
             if user_data is not None:
                 user_variables = user_data._get_all_variables()
+                print(user_variables)
                 for var in variables:
                     if var in user_variables:
-                        var_data = user_data._get_data_by_key(var)
-                        if var_data is not None:
-                            variable_dict.get(var, []).append(var_data.get_data())
+                        var_data = user_data.get_data_by_variable(var)
+                        print(var_data)
+                        if var_data is not None and len(var_data) != 0:
+                            if var not in variable_dict:
+                                variable_dict[var] = []
+                            variable_dict[var].append(var_data[0].get_data())
 
         # Combine the all data for each variable
         for var in variable_dict:
@@ -88,6 +95,7 @@ class RadarData(Data):
                     combined_df = combined_df.toPandas()
                 variable_data_list.append(combined_df)
 
+        print(variable_data_list)
         return variable_data_list
 
     def get_data_by_user_id(

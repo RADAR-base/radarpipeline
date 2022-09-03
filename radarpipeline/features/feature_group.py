@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Tuple
+from typing import List
 
 from radarpipeline.datalib import RadarData
 from radarpipeline.features.feature import Feature
@@ -12,13 +12,13 @@ class FeatureGroup(ABC):
 
     name: str
     description: str
-    features: List[Feature]
+    features: List["Feature"]
     required_input_data: List[str]
 
-    def __init__(self, name: str, description: str, features: List[Feature]):
+    def __init__(self, name: str, description: str, features: List["Feature"]):
         self.name = name
         self.description = description
-        self.features = features
+        self.features = [f() for f in features]
         self.required_input_data = self._compute_required_data()
 
     def __str__(self):

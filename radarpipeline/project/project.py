@@ -3,6 +3,7 @@ import inspect
 import logging
 import os
 import pathlib
+import sys
 from typing import Any, Dict, List, Union
 
 from git.repo import Repo
@@ -120,14 +121,14 @@ class Project:
                     f"Key not present in the config: location at index {index}"
                 )
 
-            if "feature_group" not in feature:
+            if "feature_groups" not in feature:
                 raise ValueError(
-                    f"Key not present in the config: feature_group at index {index}"
+                    f"Key not present in the config: feature_groups at index {index}"
                 )
 
-            if len(feature["feature_group"]) == 0:
+            if len(feature["feature_groups"]) == 0:
                 raise ValueError(
-                    f"feature_group array cannot be empty at index {index}"
+                    f"feature_groups array cannot be empty at index {index}"
                 )
 
             feature_location = feature["location"]
@@ -147,7 +148,7 @@ class Project:
                     Repo.clone_from(feature_location, cache_dir)
 
                 feature_location = cache_dir
-                logger.info(f"Using feature from cache: {feature_location}")
+                logger.info(f"Using feature from cache location: {feature_location}")
             else:
                 feature_location = os.path.expanduser(feature_location)
                 if not os.path.isdir(feature_location):
@@ -227,9 +228,9 @@ class Project:
         )
         sms = repo.submodules
         try:
-            mock_data_submodule = sms["mock-data"]
+            mock_data_submodule = sms["mockdata"]
         except IndexError:
-            raise ValueError("mock-data submodule not found in the repository")
+            raise ValueError("mockdata submodule not found in the repository")
         if not (mock_data_submodule.exists() and mock_data_submodule.module_exists()):
             logger.info("Mock data submodule not found. Cloning it...")
             repo.git.submodule("update", "--init", "--recursive")
@@ -252,19 +253,19 @@ class Project:
             logger.info("Using mock features")
         else:
             for feature in features:
-                feature_groups.add(self._get_feature_group(feature))
-            logger.info(f"Number of feature groups found: {len(feature_groups)}")
+                feature_groups.update(self._get_feature_group(feature))
+            logger.info(f"Number of feature groups found: {len(list(feature_groups))}")
             logger.debug(f"List of Feature groups: {feature_groups}")
 
         return list(feature_groups)
 
-    def _get_feature_group(self, feature_name: dict) -> List[FeatureGroup]:
+    def _get_feature_group(self, feature: dict) -> List[FeatureGroup]:
         """
         Get feature group from filepath or name
 
         Parameters
         ----------
-        feature_name: dict
+        feature: dict
             Feature to get from the specified location
 
         Returns
@@ -273,44 +274,34 @@ class Project:
             List of feature group(s)
         """
 
-        feature_group_classes = []
+        feature_group_classes = set()
 
-        # Check if feature_name is a valid feature group path
-        absolute_feature_path = self._get_absolute_path(feature_name)
-        if os.path.exists(absolute_feature_path):
-            feature_group_classes = self._get_feature_groups_from_filepath(
-                absolute_feature_path
-            )
-        else:
-            # Iterate over the features directory and list all the features classes
-            # If all_feature_classes does not exists then create it
-            if not hasattr(self, "all_feature_classes"):
-                for root, dirs, files in os.walk(self.feature_path):
-                    for file in files:
-                        if file.endswith(".py"):
-                            self.all_feature_classes = (
-                                self._get_feature_groups_from_filepath(
-                                    os.path.join(root, file)
-                                )
-                            )
-            # Search feature_name in all_feature_classes
-            for feature_class in self.all_feature_classes:
-                if feature_class.name == feature_name:
-                    feature_group_classes.append(feature_class)
+        feature_location = feature["location"]
+        req_feature_groups = feature["feature_groups"]
+
+        # Get feature class from __init__.py file in feature_location
+        all_feature_group_classes = self._get_feature_groups_from_filepath(
+            feature_location
+        )
+
+        # Search feature_name in all_feature_classes
+        for feature_group_class in all_feature_group_classes:
+            if feature_group_class.name in req_feature_groups:
+                feature_group_classes.add(feature_group_class)
 
         if len(feature_group_classes) == 0:
-            raise ValueError(f"Feature not found: {feature_name}")
+            raise ValueError(f"Feature not found: {feature}")
 
-        return feature_group_classes
+        return list(feature_group_classes)
 
-    def _get_feature_groups_from_filepath(self, filepath: str) -> List[Any]:
+    def _get_feature_groups_from_filepath(self, feature_location: str) -> List[Any]:
         """
         Gets the feature group classes from the filepath
 
         Parameters
         ----------
-        filepath: str
-            Filepath of the feature group class
+        feature_location: str
+            Filepath of the feature group classes
 
         Returns
         -------
@@ -318,21 +309,23 @@ class Project:
             List of feature group classes
         """
 
-        # Convert filepath to module path
-        filepath_without_extension = filepath.replace(".py", "")
-        feature_module_name = ".".join(filepath_without_extension.split(os.sep))
+        parent_dir = os.path.dirname(feature_location)
+        base_name = os.path.basename(feature_location)
+
+        sys.path.insert(1, parent_dir)
 
         # Import the feature module
-        feature_module = importlib.import_module(feature_module_name)
+        feature_module = importlib.import_module(base_name)
 
         # Get the feature group class
-        feature_groups = []
-        for name, obj in inspect.getmembers(feature_module):
-            if inspect.isclass(obj) and obj != Feature and obj != FeatureGroup:
-                if isinstance(obj(), FeatureGroup):
-                    feature_groups.append(obj())
+        feature_groups = set()
+        for name, obj in inspect.getmembers(feature_module, inspect.isclass):
+            if obj != Feature and obj != FeatureGroup:
+                instance = obj()
+                if isinstance(instance, FeatureGroup):
+                    feature_groups.add(instance)
 
-        return feature_groups
+        return list(feature_groups)
 
     def _get_total_required_data(self) -> List[str]:
         """
@@ -347,6 +340,8 @@ class Project:
         total_required_data = set()
         for feature_group in self.feature_groups:
             total_required_data.update(feature_group.get_required_data())
+
+        logger.info(f"Total required data: {total_required_data}")
 
         return list(total_required_data)
 
@@ -366,9 +361,7 @@ class Project:
 
         elif self.config["input_data"]["data_location"] == "mock":
             if self.config["input_data"]["data_format"] == "csv":
-                mock_config = {
-                    "local_directory": os.path.join("mock-data", "mock-data")
-                }
+                mock_config = {"local_directory": os.path.join("mockdata", "mockdata")}
                 mock_required_data = [
                     "android_phone_battery_level",
                     "android_phone_step_count",
