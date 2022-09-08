@@ -266,6 +266,7 @@ class AvroSchemaReader(SchemaReader):
         "float": FloatType(),
         "double": DoubleType(),
         "string": StringType(),
+        "enum": StringType(),
     }
 
     def __init__(self, schema_dir: str) -> None:
@@ -315,6 +316,8 @@ class AvroSchemaReader(SchemaReader):
         for value in value_dict["type"]["fields"]:
             name = value["name"]
             typ = value["type"]
+            if type(typ) is dict and "type" in typ:
+                typ = typ["type"]
             field_type = self._get_field(typ)
             schema_fields.append(StructField(f"value.{name}", field_type, True))
 

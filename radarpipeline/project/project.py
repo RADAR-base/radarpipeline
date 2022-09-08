@@ -355,7 +355,6 @@ class Project:
                 self.data = SparkCSVDataReader(
                     self.config["input_data"], self.total_required_data
                 ).read()
-                pass
             else:
                 raise ValueError("Wrong data format")
 
@@ -379,4 +378,12 @@ class Project:
         """
 
         for feature_group in self.feature_groups:
-            self.features[feature_group] = feature_group.compute_features(self.data)
+            print("Get All Required Data")
+            print(feature_group.get_required_data())
+            print("Get All Features")
+            print(feature_group.get_all_features(self.data))
+            self.features[feature_group.name] = feature_group.compute_features(
+                self.data
+            )
+            print("Computed Features")
+            print(self.features[feature_group.name])

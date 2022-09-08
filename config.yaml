@@ -4,8 +4,8 @@ project:
     version: mock_version
 
 input_data:
-    data_location: mock
-    local_directory: mock-data/mock-data
+    data_location: local
+    local_directory: mockdata/mockdata
     data_format: csv
 
 features:
