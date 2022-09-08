@@ -25,3 +25,7 @@ def run():
     except Exception as e:
         logger.info(e)
         sys.exit(1)
+
+
+if __name__ == "__main__":
+    run()
