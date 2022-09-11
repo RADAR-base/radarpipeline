@@ -46,7 +46,12 @@ class RadarData(Data):
 
     def get_combined_data_by_variable(
         self, variables: Union[str, List[str]], as_pandas: bool = False
-    ) -> Union[List[Dict[str, RadarVariableData]], List[Dict[str, pd.DataFrame]]]:
+    ) -> Union[
+        Dict[str, RadarVariableData],
+        Dict[str, pd.DataFrame],
+        List[Dict[str, RadarVariableData]],
+        List[Dict[str, pd.DataFrame]],
+    ]:
         """
         Returns the combined data of the RADAR data for the given variables
 
@@ -59,11 +64,18 @@ class RadarData(Data):
 
         Returns
         -------
-        Union[List[Dict[str, RadarVariableData]], List[Dict[str, pd.DataFrame]]]
+        Union[
+            Dict[str, RadarVariableData],
+            Dict[str, pd.DataFrame],
+            List[Dict[str, RadarVariableData]],
+            List[Dict[str, pd.DataFrame]],
+        ]
             The combined data of the RADAR data for the given variables
         """
 
+        is_only_one_var = False
         if isinstance(variables, str):
+            is_only_one_var = True
             variables = [variables]
 
         all_user_ids = self._get_all_user_ids()
@@ -92,11 +104,19 @@ class RadarData(Data):
                     combined_df = combined_df.toPandas()
                 variable_data_list.append(combined_df)
 
-        return variable_data_list
+        if is_only_one_var:
+            return variable_data_list[0]
+        else:
+            return variable_data_list
 
     def get_data_by_user_id(
         self, user_ids: Union[str, List[str]], as_pandas: bool = False
-    ) -> Union[List[RadarUserData], List[Dict[str, Dict[str, pd.DataFrame]]]]:
+    ) -> Union[
+        RadarUserData,
+        Dict[str, Dict[str, pd.DataFrame]],
+        List[RadarUserData],
+        List[Dict[str, Dict[str, pd.DataFrame]]],
+    ]:
         """
         Returns the data of the RADAR data for the given user ids
 
@@ -109,11 +129,18 @@ class RadarData(Data):
 
         Returns
         -------
-        Union[List[RadarUserData], List[Dict[str, Dict[str, pd.DataFrame]]]]
+        Union[
+            RadarUserData,
+            Dict[str, Dict[str, pd.DataFrame]],
+            List[RadarUserData],
+            List[Dict[str, Dict[str, pd.DataFrame]]]
+        ]
             The data of the RADAR data for the given user ids
         """
 
+        is_only_one_var = False
         if isinstance(user_ids, str):
+            is_only_one_var = True
             user_id = [user_ids]
 
         all_user_ids = self._get_all_user_ids()
@@ -128,4 +155,7 @@ class RadarData(Data):
                     else:
                         user_data_list.append(user_data)
 
-        return user_data_list
+        if is_only_one_var:
+            return user_data_list[0]
+        else:
+            return user_data_list

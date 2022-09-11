@@ -43,7 +43,12 @@ class RadarUserData(Data):
 
     def get_data_by_variable(
         self, variables: Union[str, List[str]], as_pandas: bool = False
-    ) -> Union[List[Dict[str, RadarVariableData]], List[Dict[str, pd.DataFrame]]]:
+    ) -> Union[
+        Dict[str, RadarVariableData],
+        Dict[str, pd.DataFrame],
+        List[Dict[str, RadarVariableData]],
+        List[Dict[str, pd.DataFrame]],
+    ]:
         """
         Returns the data of the user for the given variables
 
@@ -56,11 +61,18 @@ class RadarUserData(Data):
 
         Returns
         -------
-        Union[List[Dict[str, RadarVariableData]], List[Dict[str, pd.DataFrame]]]
+        Union[
+            Dict[str, RadarVariableData],
+            Dict[str, pd.DataFrame],
+            List[Dict[str, RadarVariableData]],
+            List[Dict[str, pd.DataFrame]]
+        ]
             The data of the user for the given variables
         """
 
+        is_only_one_var = False
         if isinstance(variables, str):
+            is_only_one_var = True
             variables = [variables]
 
         all_variables = self._get_all_variables()
@@ -75,4 +87,7 @@ class RadarUserData(Data):
                     else:
                         variable_data_list.append(var_data)
 
-        return variable_data_list
+        if is_only_one_var:
+            return variable_data_list[0]
+        else:
+            return variable_data_list
