@@ -89,12 +89,11 @@ class RadarData(Data):
                 user_variables = user_data._get_all_variables()
                 for var in variables:
                     if var in user_variables:
-                        var_data_list = user_data.get_data_by_variable(var)
-                        if var_data_list is not None and len(var_data_list) != 0:
+                        var_data = user_data.get_data_by_variable(var)
+                        if var_data is not None:
                             if var not in variable_dict:
                                 variable_dict[var] = []
-                            for var_data in var_data_list:
-                                variable_dict[var].append(var_data.get_data())
+                            variable_dict[var].append(var_data.get_data())
 
         # Combine the all data for each variable
         for var in variable_dict:
