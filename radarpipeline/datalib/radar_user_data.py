@@ -1,7 +1,5 @@
 from typing import Dict, List, Optional, Union
 
-import pandas as pd
-
 from radarpipeline.datalib.data import Data
 from radarpipeline.datalib.radar_variable_data import RadarVariableData
 

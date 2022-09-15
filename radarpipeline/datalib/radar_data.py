@@ -1,4 +1,3 @@
-from pprint import pprint
 from typing import Dict, List, Optional, Union
 
 import pandas as pd
@@ -7,7 +6,6 @@ from radarpipeline.common.data_types import DataType
 from radarpipeline.common.utils import combine_pyspark_dfs
 from radarpipeline.datalib.data import Data
 from radarpipeline.datalib.radar_user_data import RadarUserData
-from radarpipeline.datalib.radar_variable_data import RadarVariableData
 
 
 class RadarData(Data):

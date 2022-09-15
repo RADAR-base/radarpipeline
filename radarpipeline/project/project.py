@@ -4,7 +4,6 @@ import logging
 import os
 import pathlib
 import sys
-from pprint import pprint
 from typing import Any, Dict, List, Union
 
 from git.repo import Repo

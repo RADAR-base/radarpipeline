@@ -1,22 +1,9 @@
-import gc
-import gzip
 import json
 import logging
 import os
-from datetime import datetime
-from email import header
-from functools import partial, partialmethod
-from itertools import repeat
-from multiprocessing.pool import Pool
-from operator import is_not
-from pprint import pprint
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Union
 
-import pandas as pd
-import pysftp
 import pyspark.sql as ps
-from pandas.errors import EmptyDataError
-from py4j.java_gateway import java_import
 from pyspark.sql import SparkSession
 from pyspark.sql.types import (
     BooleanType,
@@ -28,94 +15,11 @@ from pyspark.sql.types import (
     StructField,
     StructType,
 )
-from tqdm import tqdm
 
 from radarpipeline.datalib import RadarData, RadarUserData, RadarVariableData
 from radarpipeline.io import DataReader, SchemaReader
 
 logger = logging.getLogger(__name__)
-
-
-# class SFTPDataReaderCSV(DataReader):
-#     def __init__(self, config: Dict, required_data: List[str]) -> None:
-#         super().__init__(config)
-#         self._create_sftp_credentials()
-#         self.required_data = required_data
-
-#     def _create_sftp_credentials(self):
-#         if self.config["sftp_password"] is not None:
-#             self.sftp_cred = {
-#                 "host": self.config["sftp_host"],
-#                 "username": self.config["sftp_username"],
-#                 "password": self.config["sftp_password"],
-#             }
-#         elif self.config["sftp_private_key"] is not None:
-#             self.sftp_cred = {
-#                 "host": self.config["sftp_host"],
-#                 "username": self.config["sftp_username"],
-#                 "private_key": self.config["sftp_private_key"],
-#             }
-#         self.source_dir = self.config["sftp_directory"]
-
-#     def _tuples_to_dict(self, tuple_list):
-#         """Convert a list of tuples to a dict."""
-
-#         di = dict()
-#         for element in tuple_list:
-#             if element is not None:
-#                 a, b = element
-#                 di[a] = b
-#         return di
-
-#     def read(self) -> RadarData:
-#         with pysftp.Connection(**self.sftp_cred) as sftp:
-#             sftp.cwd(self.source_dir)
-#             uids = sftp.listdir()
-#             user_data_dict = {}
-#             for uid in uids:
-#                 if uid[0] == ".":
-#                     continue
-#                 variable_data_arr = {}
-#                 for dirname in self.required_data:
-#                     file_data_arr = {}
-#                     if dirname not in sftp.listdir(f"{uid}/"):
-#                         continue
-#                     # func = partial(self._read_data_file, sftp, f'{uid}/{dirname}')
-#                     data_files = sftp.listdir(f"{uid}/{dirname}/")
-#                     # read files parallel using pool
-#                     with Pool(8) as p:
-#                         file_data_arr = self._tuples_to_dict(
-#                             p.starmap(
-#                                 self._read_data_file,
-#                                 zip(repeat(f"{uid}/{dirname}"), data_files),
-#                             )
-#                         )
-#                     if len(file_data_arr) > 0:
-#                         variable_data_arr[dirname] = RadarVariableData(file_data_arr)
-#                 user_data_dict[uid] = RadarUserData(variable_data_arr)
-#         return RadarData(user_data_dict)
-
-#     def _read_data_file(self, dirs, data_file):
-#         with pysftp.Connection(**self.sftp_cred) as sftp:
-#             sftp.cwd(self.source_dir)
-#             if data_file.split(".")[-1] == "gz":
-#                 dt = data_file.split(".")[0]
-#                 if len(dt.split("_")) != 2:
-#                     return (None, None)
-#                 try:
-#                     return (
-#                         datetime.strptime(dt, "%Y%m%d_%H%M"),
-#                         RadarFileData(self._read_csv(sftp, f"{dirs}/{data_file}")),
-#                     )
-#                 except EmptyDataError:
-#                     return (None, None)
-
-#     def _read_csv(self, sftp, path):
-#         with sftp.open(path) as f:
-#             f.prefetch()
-#             gzip_fd = gzip.GzipFile(fileobj=f)
-#             df = pd.read_csv(gzip_fd)
-#         return df
 
 
 class SparkCSVDataReader(DataReader):
