@@ -4,6 +4,7 @@ import logging
 import os
 import pathlib
 import sys
+from pprint import pprint
 from typing import Any, Dict, List, Union
 
 from git.repo import Repo
@@ -403,9 +404,8 @@ class Project:
             print("Get All Required Data")
             print(feature_group.get_required_data())
             print("Get All Features")
-            print(feature_group.get_all_features(self.data))
-            self.features[feature_group.name] = feature_group.compute_features(
-                self.data
-            )
+            feature_names, feature_values = feature_group.get_all_features(self.data)
+            for feature_name, feature_value in zip(feature_names, feature_values):
+                self.features[feature_name] = feature_value
             print("Computed Features")
-            print(self.features[feature_group.name])
+            pprint(self.features)
