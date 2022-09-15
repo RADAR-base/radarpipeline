@@ -8,6 +8,7 @@ class Data(ABC):
     """
 
     _data: Any
+    df_type: str
 
     def __init__(self) -> None:
         pass
@@ -28,18 +29,9 @@ class Data(ABC):
     def get_data_size(self) -> int:
         pass
 
-    def _get_data_as_pd(self) -> Any:
-        """
-        Returns the data as a pandas dataframe
-        """
-        data_as_pd = {}
-        for key in self._data.keys():
-            data_as_pd[key] = self._data[key]._get_data_as_pd()
-        return data_as_pd
-
     def _preprocess_data(self) -> None:
         """
         Preprocess the data
         """
-        for key in self._data.keys():
+        for key in self.get_data_keys():
             self._data[key]._preprocess_data()

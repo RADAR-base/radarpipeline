@@ -8,6 +8,9 @@ input_data:
     local_directory: mockdata/mockdata
     data_format: csv
 
+configurations:
+    df_type: 'pandas'
+
 features:
     - location: 'https://github.com/RADAR-base-Analytics/mockfeatures'
       feature_groups:

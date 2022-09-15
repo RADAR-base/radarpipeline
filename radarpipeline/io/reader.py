@@ -123,9 +123,10 @@ class SparkCSVDataReader(DataReader):
     Read CSV data from local directory using pySpark
     """
 
-    def __init__(self, config: Dict, required_data: List[str]):
+    def __init__(self, config: Dict, required_data: List[str], df_type: str = "pandas"):
         super().__init__(config)
         self.required_data = required_data
+        self.df_type = df_type
         self.source_path = config.get("local_directory", "")
         self.spark = self._initialize_spark_session()
 
@@ -202,9 +203,9 @@ class SparkCSVDataReader(DataReader):
                 if variable_data.get_data_size() > 0:
                     variable_data_dict[dirname] = variable_data
 
-            user_data_dict[uid] = RadarUserData(variable_data_dict)
+            user_data_dict[uid] = RadarUserData(variable_data_dict, self.df_type)
 
-        radar_data = RadarData(user_data_dict)
+        radar_data = RadarData(user_data_dict, self.df_type)
         return radar_data
 
     def _read_variable_data_files(
@@ -246,10 +247,13 @@ class SparkCSVDataReader(DataReader):
                 encoding="UTF-8",
             )
 
-        # To print the dataframe stats for cross-checking
-        # print(df.describe().show())
+        if self.df_type == "pandas":
+            df = df.toPandas()
 
-        variable_data = RadarVariableData(df)
+        # To print the dataframe stats for cross-checking
+        # print(df.show(5))
+
+        variable_data = RadarVariableData(df, self.df_type)
 
         return variable_data
 

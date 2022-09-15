@@ -1,5 +1,6 @@
 import logging
 import sys
+import traceback
 
 from radarpipeline import Project
 from radarpipeline.common.logger import logger_init
@@ -22,8 +23,8 @@ def run():
     except KeyboardInterrupt:
         logger.info("Pipeline run interrupted by user")
         sys.exit(0)
-    except Exception as e:
-        logger.info(e)
+    except Exception:
+        logger.info(traceback.format_exc())
         sys.exit(1)
 
 

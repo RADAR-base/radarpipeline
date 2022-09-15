@@ -67,6 +67,7 @@ class Project:
                 raise ValueError(f"Key not present in the config: {key}")
 
         self._validate_input()
+        self._validate_configurations()
         self._validate_features()
         self._validate_output()
 
@@ -106,6 +107,21 @@ class Project:
 
         else:
             raise ValueError("Invalid value for the key: data_location")
+
+    def _validate_configurations(self) -> None:
+        """
+        Validates the configurations config
+        """
+
+        if "configurations" not in self.config:
+            self.config["configurations"] = {}
+
+        valid_df_types = ["pandas", "spark"]
+
+        if "df_type" not in self.config["configurations"]:
+            self.config["configurations"]["df_type"] = "pandas"
+        elif self.config["configurations"]["df_type"] not in valid_df_types:
+            raise ValueError("Invalid value for the key: df_type")
 
     def _validate_features(self) -> None:
         """
@@ -353,19 +369,25 @@ class Project:
         if self.config["input_data"]["data_location"] == "local":
             if self.config["input_data"]["data_format"] == "csv":
                 self.data = SparkCSVDataReader(
-                    self.config["input_data"], self.total_required_data
+                    self.config["input_data"],
+                    self.total_required_data,
+                    self.config["configurations"]["df_type"],
                 ).read()
             else:
                 raise ValueError("Wrong data format")
 
         elif self.config["input_data"]["data_location"] == "mock":
             if self.config["input_data"]["data_format"] == "csv":
-                mock_config = {"local_directory": os.path.join("mockdata", "mockdata")}
+                mock_config_input = {
+                    "local_directory": os.path.join("mockdata", "mockdata")
+                }
                 mock_required_data = [
                     "android_phone_battery_level",
                     "android_phone_step_count",
                 ]
-                self.data = SparkCSVDataReader(mock_config, mock_required_data).read()
+                self.data = SparkCSVDataReader(
+                    mock_config_input, mock_required_data
+                ).read()
             else:
                 raise ValueError("Wrong data format")
 
