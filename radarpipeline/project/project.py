@@ -408,4 +408,6 @@ class Project:
             for feature_name, feature_value in zip(feature_names, feature_values):
                 self.features[feature_name] = feature_value
             print("Computed Features")
-            pprint(self.features)
+            for feature_name, feature_values in self.features.items():
+                print(feature_name)
+                print(feature_values)
