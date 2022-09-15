@@ -400,9 +400,6 @@ class Project:
         """
 
         for feature_group in self.feature_groups:
-            print("Get All Required Data")
-            print(feature_group.get_required_data())
-            print("Get All Features")
             feature_names, feature_values = feature_group.get_all_features(self.data)
             for feature_name, feature_value in zip(feature_names, feature_values):
                 self.features[feature_name] = feature_value
