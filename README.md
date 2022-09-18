@@ -83,13 +83,19 @@ Wiki resources:
     $ python -m pip install -r requirements.txt
     ```
 
+-   Install the module as a python package by running the command
+
+    ```bash
+    $ python -m pip install -e .
+    ```
+
 -   To verify the installations, run the following command in the project root directory to run the pipeline:
 
     ```bash
     $ python .
     ```
 
--   The pipeline would do a mock run and ingest the data in the `mock-data` directory. You can see some outputs in the CLI and if the project is installed correctly, the mock pipeline would run without errors.
+-   The pipeline would do a mock run and ingest the data in the `mock-data` directory. You can see some outputs in the CLI and if the project is installed correctly, the mock pipeline would run without errors and save the data to the `output` directory.
 
 ## License
 
