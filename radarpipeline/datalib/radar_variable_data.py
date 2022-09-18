@@ -1,11 +1,10 @@
 from typing import List
 
 import pandas as pd
-import pyspark.sql as ps
 import pyspark.sql.functions as f
 
-from radarpipeline.common.data_types import DataType
-from radarpipeline.datalib.data import Data
+from radarpipeline.datalib.abc import Data
+from radarpipeline.datatypes import DataType
 
 
 class RadarVariableData(Data):

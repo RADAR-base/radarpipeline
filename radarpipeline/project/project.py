@@ -26,15 +26,17 @@ class Project:
             Path to the config file or a dict containing the config
         """
 
+        self.valid_input_formats = ["csv", "csv.gz"]
+        self.valid_output_formats = ["csv"]
+        self.input_data = input_data
         self.feature_path = os.path.abspath(
             os.path.join("radarpipeline", "features", "features")
         )
-        self.input_data = input_data
+        self.features = {}
         self.config = self._get_config()
         self._validate_config()
         self.feature_groups = self._get_feature_groups()
         self.total_required_data = self._get_total_required_data()
-        self.features = {}
 
     def _get_config(self) -> Dict[str, Any]:
         """
@@ -100,9 +102,11 @@ class Project:
                     raise ValueError(f"Path does not exist: {local_directory}")
                 self.config["input_data"]["local_directory"] = local_directory
 
+            # Raise error if data_format it not valid input formats
+            if self.config["input_data"]["data_format"] not in self.valid_input_formats:
+                raise ValueError("Invalid value for key in input_data: data_format")
+
         elif self.config["input_data"]["data_location"] == "mock":
-            if "data_format" not in self.config["input_data"]:
-                raise ValueError("Key not present in the config file: data_format")
             self._update_mock_data()
 
         else:
@@ -191,21 +195,22 @@ class Project:
                     raise ValueError(f"Key not present in the config: {key}")
 
         elif self.config["output_data"]["output_location"] == "local":
-            if "output_directory" not in self.config["output_data"]:
-                raise ValueError("Key not present in the config: output_directory")
+            if "local_directory" not in self.config["output_data"]:
+                raise ValueError("Key not present in the config: local_directory")
             else:
-                # Check if output_directory is absolute path. If not, then set it.
-                output_directory = self.config["output_data"]["output_directory"]
-                output_directory = self._get_absolute_path(output_directory)
-                if not os.path.exists(output_directory):
-                    raise ValueError(f"Path does not exist: {output_directory}")
-                self.config["output_data"]["output_directory"] = output_directory
+                # Check if local_directory is absolute path. If not, then set it.
+                local_directory = self.config["output_data"]["local_directory"]
+                local_directory = self._get_absolute_path(local_directory)
+                if not os.path.exists(local_directory):
+                    os.makedirs(local_directory, exist_ok=True)
+                self.config["output_data"]["output_directory"] = local_directory
 
-            # Raise error if output_format it not csv or xlsx
-            if self.config["output_data"]["output_format"] not in ["csv", "xlsx"]:
-                raise ValueError(
-                    "Invalid value for key: output_format\nHas to be csv or xlsx"
-                )
+            # Raise error if data_format it not valid output formats
+            if (
+                self.config["output_data"]["data_format"]
+                not in self.valid_output_formats
+            ):
+                raise ValueError("Invalid value for key in output_data: data_format")
 
         elif self.config["output_data"]["output_location"] == "mock":
             pass
@@ -270,8 +275,11 @@ class Project:
         else:
             for feature in features:
                 feature_groups.update(self._get_feature_group(feature))
+            feature_group_names = [
+                feature_group.name for feature_group in feature_groups
+            ]
             logger.info(f"Number of feature groups found: {len(list(feature_groups))}")
-            logger.debug(f"List of Feature groups: {feature_groups}")
+            logger.info(f"List of Feature groups: {feature_group_names}")
 
         return list(feature_groups)
 
@@ -367,7 +375,7 @@ class Project:
         """
 
         if self.config["input_data"]["data_location"] == "local":
-            if self.config["input_data"]["data_format"] == "csv":
+            if self.config["input_data"]["data_format"] in self.valid_input_formats:
                 self.data = SparkCSVDataReader(
                     self.config["input_data"],
                     self.total_required_data,
@@ -377,19 +385,14 @@ class Project:
                 raise ValueError("Wrong data format")
 
         elif self.config["input_data"]["data_location"] == "mock":
-            if self.config["input_data"]["data_format"] == "csv":
-                mock_config_input = {
-                    "local_directory": os.path.join("mockdata", "mockdata")
-                }
-                mock_required_data = [
-                    "android_phone_battery_level",
-                    "android_phone_step_count",
-                ]
-                self.data = SparkCSVDataReader(
-                    mock_config_input, mock_required_data
-                ).read()
-            else:
-                raise ValueError("Wrong data format")
+            mock_config_input = {
+                "local_directory": os.path.join("mockdata", "mockdata")
+            }
+            mock_required_data = [
+                "android_phone_battery_level",
+                "android_phone_step_count",
+            ]
+            self.data = SparkCSVDataReader(mock_config_input, mock_required_data).read()
 
         else:
             raise ValueError("Wrong data location")
@@ -403,7 +406,10 @@ class Project:
             feature_names, feature_values = feature_group.get_all_features(self.data)
             for feature_name, feature_value in zip(feature_names, feature_values):
                 self.features[feature_name] = feature_value
-            print("Computed Features")
-            for feature_name, feature_values in self.features.items():
-                print(feature_name)
-                print(feature_values)
+
+    def export_data(self) -> None:
+        """
+        Exports the computed features to the specified location
+        """
+
+        pass

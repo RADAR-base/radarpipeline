@@ -1,6 +1,6 @@
 from typing import Dict, List, Optional, Union
 
-from radarpipeline.datalib.data import Data
+from radarpipeline.datalib.abc import Data
 from radarpipeline.datalib.radar_variable_data import RadarVariableData
 
 

@@ -2,10 +2,10 @@ from typing import Dict, List, Optional, Union
 
 import pandas as pd
 
-from radarpipeline.common.data_types import DataType
-from radarpipeline.common.utils import combine_pyspark_dfs
-from radarpipeline.datalib.data import Data
+from radarpipeline.common import utils
+from radarpipeline.datalib.abc import Data
 from radarpipeline.datalib.radar_user_data import RadarUserData
+from radarpipeline.datatypes import DataType
 
 
 class RadarData(Data):
@@ -92,7 +92,7 @@ class RadarData(Data):
         for var in variable_dict:
             if len(variable_dict[var]) > 0:
                 if self.df_type == "spark":
-                    combined_df = combine_pyspark_dfs(variable_dict[var])
+                    combined_df = utils.combine_pyspark_dfs(variable_dict[var])
                 else:
                     combined_df = pd.concat(variable_dict[var], ignore_index=True)
                 variable_data_list.append(combined_df)

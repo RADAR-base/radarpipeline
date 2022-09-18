@@ -19,6 +19,7 @@ def run():
         project = Project(input_data="config.yaml")
         project.fetch_data()
         project.compute_features()
+        project.export_data()
         logger.info("Pipeline run completed successfully")
     except KeyboardInterrupt:
         logger.info("Pipeline run interrupted by user")
