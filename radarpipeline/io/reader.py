@@ -17,7 +17,7 @@ from pyspark.sql.types import (
 )
 
 from radarpipeline.datalib import RadarData, RadarUserData, RadarVariableData
-from radarpipeline.io import DataReader, SchemaReader
+from radarpipeline.io.abc import DataReader, SchemaReader
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ class SparkCSVDataReader(DataReader):
 
         return spark
 
-    def read(self) -> RadarData:
+    def read_data(self) -> RadarData:
         """
         Reads RADAR data from local CSV files
 
@@ -191,10 +191,12 @@ class AvroSchemaReader(SchemaReader):
         """
 
         schema_dir_base = os.path.basename(self.schema_dir)
-        schema_file = os.path.join(self.schema_dir, f"schema-{schema_dir_base}.json")
+        self.schema_file = os.path.join(
+            self.schema_dir, f"schema-{schema_dir_base}.json"
+        )
 
-        if os.path.exists(schema_file):
-            self.schema_file = schema_file
+        if os.path.exists(self.schema_file):
+            self.schema_file = self.schema_file
             return True
 
         return False

@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Dict
 
 from radarpipeline.datalib import Data
+from radarpipeline.datatypes.data_types import DataType
 
 
 class DataReader(ABC):
@@ -15,7 +16,7 @@ class DataReader(ABC):
         self.config = config
 
     @abstractmethod
-    def read(self) -> Data:
+    def read_data(self) -> Data:
         pass
 
 
@@ -36,4 +37,19 @@ class SchemaReader(ABC):
 
     @abstractmethod
     def get_schema(self):
+        pass
+
+
+class DataWriter(ABC):
+    """
+    Abstract class for writing the RADAR data
+    """
+
+    features: Dict[str, DataType]
+
+    def __init__(self, features: Dict[str, DataType]) -> None:
+        self.features = features
+
+    @abstractmethod
+    def write_data(self) -> None:
         pass

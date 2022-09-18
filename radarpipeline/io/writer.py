@@ -1,7 +1,13 @@
-from typing import List, Tuple
+from typing import Dict
 
-from radarpipeline.datalib import Data
+from radarpipeline.datatypes.data_types import DataType
+from radarpipeline.io.abc import DataWriter
 
 
-def write_data(self, output_data_list: List[str]):
-    pass
+class SparkDataWriter(DataWriter):
+    """
+    Writes the data to a local directory using pySpark
+    """
+
+    def __init__(self, features: Dict[str, DataType]) -> None:
+        super().__init__(features)

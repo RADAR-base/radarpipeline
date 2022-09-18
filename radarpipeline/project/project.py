@@ -380,7 +380,7 @@ class Project:
                     self.config["input_data"],
                     self.total_required_data,
                     self.config["configurations"]["df_type"],
-                ).read()
+                ).read_data()
             else:
                 raise ValueError("Wrong data format")
 
@@ -392,7 +392,9 @@ class Project:
                 "android_phone_battery_level",
                 "android_phone_step_count",
             ]
-            self.data = SparkCSVDataReader(mock_config_input, mock_required_data).read()
+            self.data = SparkCSVDataReader(
+                mock_config_input, mock_required_data
+            ).read_data()
 
         else:
             raise ValueError("Wrong data location")
