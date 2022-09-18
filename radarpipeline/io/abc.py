@@ -46,9 +46,11 @@ class DataWriter(ABC):
     """
 
     features: Dict[str, DataType]
+    output_dir: str
 
-    def __init__(self, features: Dict[str, DataType]) -> None:
+    def __init__(self, features: Dict[str, DataType], output_dir: str) -> None:
         self.features = features
+        self.output_dir = output_dir
 
     @abstractmethod
     def write_data(self) -> None:

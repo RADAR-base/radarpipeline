@@ -20,3 +20,4 @@ output_data:
     output_location: local
     local_directory: output/mockdata
     data_format: csv
+    compress: false

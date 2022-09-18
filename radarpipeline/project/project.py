@@ -10,7 +10,7 @@ from git.repo import Repo
 
 from radarpipeline.common import utils
 from radarpipeline.features import Feature, FeatureGroup
-from radarpipeline.io import SparkCSVDataReader
+from radarpipeline.io import PandasDataWriter, SparkCSVDataReader, SparkDataWriter
 
 logger = logging.getLogger(__name__)
 
@@ -211,6 +211,11 @@ class Project:
                 not in self.valid_output_formats
             ):
                 raise ValueError("Invalid value for key in output_data: data_format")
+
+            if "compress" not in self.config["output_data"]:
+                self.config["output_data"]["compress"] = False
+            if self.config["output_data"]["compress"] == "true":
+                self.config["output_data"]["compress"] = True
 
         elif self.config["output_data"]["output_location"] == "mock":
             pass
@@ -414,4 +419,18 @@ class Project:
         Exports the computed features to the specified location
         """
 
-        pass
+        if self.config["configurations"]["df_type"] == "pandas":
+            writer = PandasDataWriter(
+                self.features,
+                self.config["output_data"]["local_directory"],
+                self.config["output_data"]["compress"],
+            )
+        elif self.config["configurations"]["df_type"] == "spark":
+            writer = SparkDataWriter(
+                self.features,
+                self.config["output_data"]["local_directory"],
+                self.config["output_data"]["compress"],
+            )
+        else:
+            raise ValueError("Wrong df_type")
+        writer.write_data()

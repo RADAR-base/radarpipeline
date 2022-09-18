@@ -7,6 +7,8 @@ import pyspark.sql as ps
 import requests
 import yaml
 
+from radarpipeline.common import constants
+
 
 def read_yaml(yaml_file_path: str) -> Dict[str, Any]:
     """
@@ -35,7 +37,7 @@ def read_yaml(yaml_file_path: str) -> Dict[str, Any]:
     if os.stat(yaml_file_path).st_size == 0:
         raise ValueError("Input file is empty")
 
-    with open(yaml_file_path, "r", encoding="utf-8") as file:
+    with open(yaml_file_path, "r", encoding=constants.ENCODING) as file:
         config = yaml.load(file, Loader=yaml.FullLoader)
 
     return config
@@ -109,3 +111,20 @@ def get_repo_name_from_url(url: str) -> str:
         raise Exception(f"Badly formatted url {url}")
 
     return url[last_slash_index + 1 : last_suffix_index]
+
+
+def pascal_to_snake_case(s: str) -> str:
+    """
+    Convert a string from PascalCase to snake_case
+
+    Parameters
+    ----------
+    s : str
+        String to convert
+
+    Returns
+    -------
+    str
+        Converted string
+    """
+    return "".join(["_" + i.lower() if i.isupper() else i for i in s]).lstrip("_")

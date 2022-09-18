@@ -16,6 +16,7 @@ from pyspark.sql.types import (
     StructType,
 )
 
+from radarpipeline.common import constants
 from radarpipeline.datalib import RadarData, RadarUserData, RadarVariableData
 from radarpipeline.io.abc import DataReader, SchemaReader
 
@@ -31,7 +32,7 @@ class SparkCSVDataReader(DataReader):
         super().__init__(config)
         self.required_data = required_data
         self.df_type = df_type
-        self.source_path = config.get("local_directory", "")
+        self.source_path = self.config.get("local_directory", "")
         self.spark = self._initialize_spark_session()
 
     def _initialize_spark_session(self) -> ps.SparkSession:
@@ -43,7 +44,9 @@ class SparkCSVDataReader(DataReader):
         SparkSession
             A SparkSession object
         """
-        spark = SparkSession.builder.master("local").appName("mock").getOrCreate()
+        spark = (
+            SparkSession.builder.master("local").appName("radarpipeline").getOrCreate()
+        )
 
         # Enable Apache Arrow for optimizations in Spark to Pandas conversion
         spark.conf.set("spark.sql.execution.arrow.pyspark.enabled", "true")
@@ -140,7 +143,7 @@ class SparkCSVDataReader(DataReader):
                 header=True,
                 schema=schema,
                 inferSchema="false",
-                encoding="UTF-8",
+                encoding=constants.ENCODING,
             )
         else:
             df = self.spark.read.load(
@@ -148,7 +151,7 @@ class SparkCSVDataReader(DataReader):
                 format="csv",
                 header=True,
                 inferSchema="true",
-                encoding="UTF-8",
+                encoding=constants.ENCODING,
             )
 
         if self.df_type == "pandas":
@@ -213,7 +216,11 @@ class AvroSchemaReader(SchemaReader):
 
         schema_fields = []
         schema_dict = json.load(
-            open(os.path.join(self.schema_dir, self.schema_file), "r", encoding="utf-8")
+            open(
+                os.path.join(self.schema_dir, self.schema_file),
+                "r",
+                encoding=constants.ENCODING,
+            )
         )
 
         key_dict = schema_dict["fields"][0]
