@@ -163,7 +163,8 @@ class Project:
                     repo = Repo(cache_dir)
                     repo.git.reset("--hard")
                     repo.git.clean("-xdf")
-                    repo.remotes.origin.pull()
+                    repo.git.checkout(repo.active_branch)
+                    repo.remotes.origin.pull(repo.active_branch.name)
                 else:
                     Repo.clone_from(feature_location, cache_dir)
 
