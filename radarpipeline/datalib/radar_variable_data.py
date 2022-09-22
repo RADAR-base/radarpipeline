@@ -1,10 +1,10 @@
 from typing import List
 
 import pandas as pd
-import pyspark.sql as ps
 import pyspark.sql.functions as f
 
-from radarpipeline.datalib.data import Data
+from radarpipeline.datalib.abc import Data
+from radarpipeline.datatypes import DataType
 
 
 class RadarVariableData(Data):
@@ -12,48 +12,56 @@ class RadarVariableData(Data):
     Class for reading data for a single variable of a single user
     """
 
-    def __init__(self, data: ps.DataFrame) -> None:
+    _data: DataType
+
+    def __init__(self, data: DataType, df_type: str = "pandas") -> None:
         self._data = data
+        self.df_type = df_type
         self._preprocess_data()
 
-    def get_data(self) -> ps.DataFrame:
+    def get_data(self) -> DataType:
         return self._data
 
-    def set_data(self, data: ps.DataFrame) -> None:
+    def set_data(self, data: DataType) -> None:
         self._data = data
 
     def get_data_keys(self) -> List[str]:
         return list(self._data.columns)
 
     def get_data_size(self) -> int:
-        return self._data.count()
-
-    def _get_data_as_pd(self) -> pd.DataFrame:
-        """
-        Converts a Spark DataFrame to a Pandas DataFrame
-
-        Returns
-        -------
-        pd.DataFrame
-            The data as a Pandas DataFrame
-        """
-
-        return self._data.toPandas()
+        if self.df_type == "pandas":
+            return len(self._data.index)
+        else:
+            return int(self._data.count())
 
     def _preprocess_data(self) -> None:
         """
         Converts all time value columns to datetime format
         """
 
-        if "value.time" in self._data.columns:
-            self._data = self._data.withColumn(
-                "value.time", f.to_date(self._data["`value.time`"])
-            )
-        if "value.timeReceived" in self._data.columns:
-            self._data = self._data.withColumn(
-                "value.timeReceived", f.to_date(self._data["`value.timeReceived`"])
-            )
-        if "value.dateTime" in self._data.columns:
-            self._data = self._data.withColumn(
-                "value.dateTime", f.to_date(self._data["`value.dateTime`"])
-            )
+        if self.df_type == "spark":
+            if "value.time" in self.get_data_keys():
+                self._data = self._data.withColumn(
+                    "value.time", f.to_date(self._data["`value.time`"])
+                )
+            if "value.timeReceived" in self.get_data_keys():
+                self._data = self._data.withColumn(
+                    "value.timeReceived", f.to_date(self._data["`value.timeReceived`"])
+                )
+            if "value.dateTime" in self.get_data_keys():
+                self._data = self._data.withColumn(
+                    "value.dateTime", f.to_date(self._data["`value.dateTime`"])
+                )
+        else:
+            if "value.time" in self.get_data_keys():
+                self._data["value.time"] = pd.to_datetime(
+                    self._data["value.time"], unit="s"
+                )
+            if "value.timeReceived" in self.get_data_keys():
+                self._data["value.timeReceived"] = pd.to_datetime(
+                    self._data["value.timeReceived"], unit="s"
+                )
+            if "value.dateTime" in self.get_data_keys():
+                self._data["value.dateTime"] = pd.to_datetime(
+                    self._data["value.dateTime"], unit="s"
+                )

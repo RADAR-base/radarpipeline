@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict, List, Tuple
+from typing import List
 
 from radarpipeline.datalib import RadarData
 
@@ -19,7 +19,7 @@ class Feature(ABC):
     def __str__(self) -> str:
         return self.name
 
-    def get_required_data(self):
+    def get_required_data(self) -> List[str]:
         return self.required_input_data
 
     @abstractmethod

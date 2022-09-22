@@ -1,8 +1,6 @@
 from typing import Dict, List, Optional, Union
 
-import pandas as pd
-
-from radarpipeline.datalib.data import Data
+from radarpipeline.datalib.abc import Data
 from radarpipeline.datalib.radar_variable_data import RadarVariableData
 
 
@@ -11,8 +9,13 @@ class RadarUserData(Data):
     Class for reading data of a single user
     """
 
-    def __init__(self, data: Dict[str, RadarVariableData]) -> None:
+    _data: Dict[str, RadarVariableData]
+
+    def __init__(
+        self, data: Dict[str, RadarVariableData], df_type: str = "pandas"
+    ) -> None:
         self._data = data
+        self.df_type = df_type
 
     def get_data(self) -> Dict[str, RadarVariableData]:
         return self._data
@@ -24,7 +27,7 @@ class RadarUserData(Data):
         return list(self._data.keys())
 
     def get_data_size(self) -> int:
-        return len(self._data)
+        return len(self._data.items())
 
     def _get_data_by_key(self, key: str) -> Optional[RadarVariableData]:
         return self._data.get(key, None)
@@ -42,8 +45,8 @@ class RadarUserData(Data):
         return self.get_data_keys()
 
     def get_data_by_variable(
-        self, variables: Union[str, List[str]], as_pandas: bool = False
-    ) -> Union[List[Dict[str, RadarVariableData]], List[Dict[str, pd.DataFrame]]]:
+        self, variables: Union[str, List[str]]
+    ) -> Union[RadarVariableData, List[RadarVariableData]]:
         """
         Returns the data of the user for the given variables
 
@@ -51,16 +54,19 @@ class RadarUserData(Data):
         ----------
         variables : Union[str, List[str]]
             The variable(s) to get the data for
-        as_pandas : bool
-            Whether to return the data as pandas dataframes or the default pySpark dataframes
 
         Returns
         -------
-        Union[List[Dict[str, RadarVariableData]], List[Dict[str, pd.DataFrame]]]
+        Union[
+            RadarVariableData,
+            List[RadarVariableData],
+        ]
             The data of the user for the given variables
         """
 
+        is_only_one_var = False
         if isinstance(variables, str):
+            is_only_one_var = True
             variables = [variables]
 
         all_variables = self._get_all_variables()
@@ -70,9 +76,9 @@ class RadarUserData(Data):
             if var in all_variables:
                 var_data = self._get_data_by_key(var)
                 if var_data is not None:
-                    if as_pandas:
-                        variable_data_list.append(var_data._get_data_as_pd())
-                    else:
-                        variable_data_list.append(var_data)
+                    variable_data_list.append(var_data)
 
-        return variable_data_list
+        if is_only_one_var:
+            return variable_data_list[0]
+        else:
+            return variable_data_list

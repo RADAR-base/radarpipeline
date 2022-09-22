@@ -133,3 +133,9 @@ dmypy.json
 
 # Logs
 log/
+
+# RADAR Directories
+data/
+features/
+temp/
+output/
