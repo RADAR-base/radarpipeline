@@ -55,6 +55,6 @@ class FeatureGroup(ABC):
         preprocessed_data = self.preprocess(data)
         for feature in self.features:
             feature_names.append(feature.name)
-            proprocessed_feature = feature.preprocess(preprocessed_data)
-            feature_values.append(feature.calculate(proprocessed_feature))
+            preprocessed_feature = feature.preprocess(preprocessed_data)
+            feature_values.append(feature.calculate(preprocessed_feature))
         return feature_names, feature_values
