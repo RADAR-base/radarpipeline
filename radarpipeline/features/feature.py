@@ -23,7 +23,14 @@ class Feature(ABC):
         return self.required_input_data
 
     @abstractmethod
-    def calculate(self, data: RadarData):
+    def preprocess(self, data: RadarData):
+        """
+        Calculates the feature.
+        """
+        pass
+
+    @abstractmethod
+    def calculate(self, data):
         """
         Calculates the feature.
         """

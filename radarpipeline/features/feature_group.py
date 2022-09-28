@@ -41,9 +41,8 @@ class FeatureGroup(ABC):
     @abstractmethod
     def preprocess(self, data: RadarData) -> DataType:
         """
-        Preprocess the data for each feature in the group.
+        Preprocess the data for each feature in the group. If there's nothing to please, please return the input
         """
-
         pass
 
     def get_all_features(self, data: RadarData) -> Tuple[List[str], List[DataType]]:
@@ -53,15 +52,9 @@ class FeatureGroup(ABC):
 
         feature_names = []
         feature_values = []
+        preprocessed_data = self.preprocess(data)
         for feature in self.features:
             feature_names.append(feature.name)
-            feature_values.append(feature.calculate(data))
+            proprocessed_feature = feature.preprocess(preprocessed_data)
+            feature_values.append(feature.calculate(proprocessed_feature))
         return feature_names, feature_values
-
-    @abstractmethod
-    def compute_features(self, data: RadarData) -> DataType:
-        """
-        compute and combine the features for each feature in the group.
-        """
-
-        pass
