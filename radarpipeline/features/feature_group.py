@@ -41,7 +41,8 @@ class FeatureGroup(ABC):
     @abstractmethod
     def preprocess(self, data: RadarData) -> DataType:
         """
-        Preprocess the data for each feature in the group. If there's nothing to please, please return the input
+        Preprocess the data for each feature in the group.
+        If there's nothing to process, please return the input
         """
         pass
 

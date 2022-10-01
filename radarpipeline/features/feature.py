@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List
 
 from radarpipeline.datalib import RadarData
+from radarpipeline.datatypes.data_types import DataType
 
 
 class Feature(ABC):
@@ -23,14 +24,15 @@ class Feature(ABC):
         return self.required_input_data
 
     @abstractmethod
-    def preprocess(self, data: RadarData):
+    def preprocess(self, data: DataType) -> DataType:
         """
-        Calculates the feature.
+        Preprocess the data for tje feature.
+        If there's nothing to preprocess, please return the input
         """
         pass
 
     @abstractmethod
-    def calculate(self, data):
+    def calculate(self, data: DataType) -> DataType:
         """
         Calculates the feature.
         """
