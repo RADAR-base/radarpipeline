@@ -1,0 +1,4 @@
+[submodule "mockdata"]
+	path = mockdata
+	url = https://github.com/RADAR-base-Analytics/mockdata
+	branch = main
