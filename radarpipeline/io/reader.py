@@ -256,13 +256,15 @@ class AvroSchemaReader(SchemaReader):
             A Spark data type
         """
         if type(data_type) is list:
-            if len(data_type) == 1:
-                return self.data_type_mapping[data_type[0]]
+            data_type.remove("null")
+            if len(data_type) == 1 and data_type[0] in self.data_type_mapping:
+                data_type  = data_type[0]
             else:
-                return StringType()
-        elif type(data_type) is str and data_type in self.data_type_mapping:
+                data_type = "string"
+        if data_type in self.data_type_mapping:
             return self.data_type_mapping[data_type]
         elif type(data_type) is dict:
             return StringType()
         else:
-            raise ValueError(f"Unknown data type: {data_type}")
+            logger.warning(f"Unknown data type: {data_type}. Returning String type.")
+            return StringType()
