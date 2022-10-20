@@ -14,6 +14,7 @@ from pyspark.sql.types import (
     StringType,
     StructField,
     StructType,
+    ArrayType
 )
 
 from radarpipeline.common import constants
@@ -135,7 +136,6 @@ class SparkCSVDataReader(DataReader):
         RadarVariableData
             A RadarVariableData object containing all the read data
         """
-
         if schema:
             df = self.spark.read.load(
                 data_files,
@@ -178,6 +178,7 @@ class AvroSchemaReader(SchemaReader):
         "double": DoubleType(),
         "string": StringType(),
         "enum": StringType(),
+        "array": StringType(),
     }
 
     def __init__(self, schema_dir: str) -> None:
@@ -222,7 +223,6 @@ class AvroSchemaReader(SchemaReader):
                 encoding=constants.ENCODING,
             )
         )
-
         key_dict = schema_dict["fields"][0]
         value_dict = schema_dict["fields"][1]
 
@@ -255,10 +255,16 @@ class AvroSchemaReader(SchemaReader):
         Any
             A Spark data type
         """
-
-        if type(data_type) is str and data_type in self.data_type_mapping:
+        if type(data_type) is list:
+            data_type.remove("null")
+            if len(data_type) == 1 and data_type[0] in self.data_type_mapping:
+                data_type  = data_type[0]
+            else:
+                data_type = "string"
+        if data_type in self.data_type_mapping:
             return self.data_type_mapping[data_type]
         elif type(data_type) is dict:
             return StringType()
         else:
-            raise ValueError(f"Unknown data type: {data_type}")
+            logger.warning(f"Unknown data type: {data_type}. Returning String type.")
+            return StringType()
