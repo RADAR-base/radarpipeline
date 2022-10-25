@@ -15,7 +15,7 @@
 
 ## Wiki
 
-Please visit the [RADAR Pipeline Wiki](https://github.com/RADAR-base/radarpipeline/wiki) to learn more about RADAR Pipeline.
+Please visit the [RADAR Pipeline Wiki](https://github.com/RADAR-base/radarpipeline/wiki) to learn more about RADAR Pipeline. Also see the [RADAR-base Analytics Catalogue](https://github.com/RADAR-base-Analytics) for available pipelines for processing RADAR-base data.
 
 Wiki resources:
 
