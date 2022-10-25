@@ -101,6 +101,7 @@ Wiki resources:
 
 This project is licensed under the [ Apache License, Version 2.0](https://github.com/RADAR-base/radarpipeline/blob/main/LICENSE).
 
-## Acknowledgment 
+## Citation & Acknowledgment 
+Please use citation [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7249526.svg)](https://doi.org/10.5281/zenodo.7249526) or or see [CITATION.cff](/CITATION.cff)
 
 [Pushkar patel](https://github.com/thepushkarp) has done a great amount of work under Google Summer of Code 2022. His work report can be found [here](https://thepushkarp.github.io/RADAR-Base-GSoC-2022-Report/). We would like to thank Pushkar for all his contribution and GSoC for giving us this opportunity. 
