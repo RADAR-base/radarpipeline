@@ -13,6 +13,7 @@ configurations:
 
 features:
     - location: 'https://github.com/RADAR-base-Analytics/mockfeatures'
+      branch: main
       feature_groups:
           - MockFeatureGroup
 

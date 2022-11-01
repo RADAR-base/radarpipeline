@@ -154,11 +154,6 @@ class Project:
 
             feature_location = feature["location"]
 
-            if "branch" in feature:
-                feature_branch = feature["branch"]
-            else:
-                feature_branch = "main"
-
             if utils.is_valid_github_path(feature_location):
                 repo_name = utils.get_repo_name_from_url(feature_location)
                 cache_dir = os.path.join(
@@ -171,10 +166,14 @@ class Project:
                 repo = Repo(cache_dir)
                 repo.git.reset("--hard")
                 repo.git.clean("-xdf")
+
+                active_branch_name = repo.active_branch.name
+                feature_branch = feature.get("branch", active_branch_name)
+
                 try:
                     repo.git.checkout(feature_branch)
                 except GitCommandError:
-                    logger.warning(f"Branch {feature_branch} does not exist. Using Main branch instead.")
+                    logger.warning(f"Branch {feature_branch} does not exist. Using the {repo.active_branch.name} branch instead.")
                     feature_branch = repo.active_branch.name
                     repo.git.checkout(feature_branch)
                 repo.remotes.origin.pull(feature_branch)
