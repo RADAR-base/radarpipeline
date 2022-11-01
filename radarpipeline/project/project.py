@@ -7,6 +7,7 @@ import sys
 from typing import Any, Dict, List, Union
 
 from git.repo import Repo
+from git.exc import GitCommandError
 
 from radarpipeline.common import utils
 from radarpipeline.features import Feature, FeatureGroup
@@ -159,14 +160,23 @@ class Project:
                     os.path.expanduser("~"), ".cache", "radarpipeline", repo_name
                 )
 
-                if os.path.exists(cache_dir):
-                    repo = Repo(cache_dir)
-                    repo.git.reset("--hard")
-                    repo.git.clean("-xdf")
-                    repo.git.checkout(repo.active_branch)
-                    repo.remotes.origin.pull(repo.active_branch.name)
-                else:
+                if not os.path.exists(cache_dir):
                     Repo.clone_from(feature_location, cache_dir)
+
+                repo = Repo(cache_dir)
+                repo.git.reset("--hard")
+                repo.git.clean("-xdf")
+
+                active_branch_name = repo.active_branch.name
+                feature_branch = feature.get("branch", active_branch_name)
+
+                try:
+                    repo.git.checkout(feature_branch)
+                except GitCommandError:
+                    logger.warning(f"Branch {feature_branch} does not exist. Using the {repo.active_branch.name} branch instead.")
+                    feature_branch = repo.active_branch.name
+                    repo.git.checkout(feature_branch)
+                repo.remotes.origin.pull(feature_branch)
 
                 feature_location = cache_dir
                 logger.info(f"Using feature from cache location: {feature_location}")
