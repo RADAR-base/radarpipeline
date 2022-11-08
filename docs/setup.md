@@ -10,19 +10,18 @@ Create a new repository on GitHub. the naming convention for the new repository 
 
 ### Step 2. Install radar-pipeline module
 
-To install the radar-pipeline module, follow the instructions in the How to run section in [README.md](../README.md)
+To install the radarpipeline module, follow the instructions in the "How to run" section in [README.md](../README.md)
 
 ### Step 3. Setup the repository
 
-
 Checkout the [Mock feature pipeline](https://github.com/RADAR-base-Analytics/mockfeatures) to see the structure of each pipeline.
 
-1. Create `__init__.py` and another directory in the repo with the same name as the repository.
+1. Create `__init__.py` and another directory in the repo with the same name as the repository (i.e. mockfeatures/mockfeatures/).
 
 2. This is the directory where all the pipeline code should be located. It is not a requirement but it can make it much more easier for users to locate all the code. In the directory create `features.py`.
 __Note__ :- You can create python file with any other name or any number of python files.
 
-3. In the python file, create feature groups using the class FeatureGroup. As mentioned earlier, each feaure feature group would contain a collection of features.
+3. In the python file, create feature groups using the class FeatureGroup. As mentioned earlier, FeatureGroup would contain a collection of Feature objects.
     The mock feature group looks like this:
 
     ```python
@@ -43,13 +42,13 @@ __Note__ :- You can create python file with any other name or any number of pyth
             return data
     ```
 
-    The `name` and `description` would give name and description of the feature group respectively.
+    The `name` and `description` specify the name and description of the feature group respectively.
 
-    the `features` variables is the list of feature classes that are part of this feature group. We''' explain in next step how to define a feature class.
+    the `features` variables is the list of feature classes that are part of this feature group. We''' explain in next step how to define a Feature class in step (4.).
 
-    The `preprocess` funtion is supposed to run all the preprocessing steps common in all the features. This is a generic preprocessing steps which should be used to do any generic preprocessing or handing of missing data.
+    The `preprocess` funtion is supposed to run all the preprocessing steps common in all the features. This is a generic preprocessing steps which should be used to do any generic preprocessing e.g. handing of missing data.
 
-4. Now define the feature class using `Feature` as the base class. In the mock data pipeline, we have defined two features `PhoneBatteryChargingDuration` and `StepCountPerDay`
+4. Now define the feature class using `Feature` as the base class. In the mock data pipeline, we have defined two example features `PhoneBatteryChargingDuration` and `StepCountPerDay`
 å
     ```py
     class PhoneBatteryChargingDuration(Feature):
@@ -132,7 +131,7 @@ __Note__ :- You can create python file with any other name or any number of pyth
 
     In the `calculate` function, the code of computing the feature has to be written.
 
-5. After all the features and feature groups have been written, in the `__init__.py`, it is needed to import all the feature groups and features.
+5. After all the features and feature groups have been written, in the `__init__.py` file, import all the feature groups and features.
 
     ```py
     from .mockfeatures.features import (
