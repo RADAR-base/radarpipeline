@@ -5,17 +5,7 @@ from typing import Any, Dict, List, Optional, Union
 
 import pyspark.sql as ps
 from pyspark.sql import SparkSession
-from pyspark.sql.types import (
-    BooleanType,
-    DoubleType,
-    FloatType,
-    IntegerType,
-    LongType,
-    StringType,
-    StructField,
-    StructType,
-    ArrayType
-)
+from pyspark.sql.types import StructField, StructType
 
 from radarpipeline.common import constants
 from radarpipeline.datalib import RadarData, RadarUserData, RadarVariableData
@@ -170,17 +160,6 @@ class AvroSchemaReader(SchemaReader):
     Reads schema from local directory
     """
 
-    data_type_mapping = {
-        "boolean": BooleanType(),
-        "int": IntegerType(),
-        "long": LongType(),
-        "float": FloatType(),
-        "double": DoubleType(),
-        "string": StringType(),
-        "enum": StringType(),
-        "array": StringType(),
-    }
-
     def __init__(self, schema_dir: str) -> None:
         super().__init__(schema_dir)
 
@@ -228,20 +207,18 @@ class AvroSchemaReader(SchemaReader):
 
         for key in key_dict["type"]["fields"]:
             name = key["name"]
-            schema_fields.append(StructField(f"key.{name}", StringType()))
+            schema_fields.append(StructField(f"key.{name}", constants.STRING_TYPE))
 
         for value in value_dict["type"]["fields"]:
             name = value["name"]
             typ = value["type"]
-            if type(typ) is dict and "type" in typ:
-                typ = typ["type"]
             field_type = self._get_field(typ)
             schema_fields.append(StructField(f"value.{name}", field_type, True))
 
         schema = StructType(schema_fields)
         return schema
 
-    def _get_field(self, data_type: Union[str, Dict]) -> Any:
+    def _get_field(self, data_type: Union[str, Dict, List]) -> Any:
         """
         Returns a Spark data type for a given data type
 
@@ -255,16 +232,175 @@ class AvroSchemaReader(SchemaReader):
         Any
             A Spark data type
         """
-        if type(data_type) is list:
-            data_type.remove("null")
-            if len(data_type) == 1 and data_type[0] in self.data_type_mapping:
-                data_type  = data_type[0]
-            else:
-                data_type = "string"
-        if data_type in self.data_type_mapping:
-            return self.data_type_mapping[data_type]
-        elif type(data_type) is dict:
-            return StringType()
+
+        if type(data_type) is dict:
+            spark_data_type = self._get_data_type_from_dict(data_type)
+        elif type(data_type) is list:
+            spark_data_type = self._get_superior_type_from_list(data_type)
         else:
-            logger.warning(f"Unknown data type: {data_type}. Returning String type.")
-            return StringType()
+            spark_data_type = self._get_data_type_from_mapping(data_type)
+
+        return spark_data_type
+
+    def _handle_unknown_data_type(self, data_type: Union[str, Dict, List]) -> Any:
+        """
+        Handles unknown data types
+
+        Parameters
+        ----------
+        data_type : Union[str, Dict]
+            Data type to handle
+
+        Returns
+        -------
+        Any
+            A Spark data type
+        """
+
+        logger.warning(f"Unknown data type: {data_type}. Returning String type.")
+        return constants.STRING_TYPE
+
+    def _get_data_type_from_mapping(self, data_type: Union[str, Dict, List]) -> Any:
+        """
+        Returns a Spark data type for a given data type
+
+        Parameters
+        ----------
+        data_type : str
+            Data type to convert to a Spark data type
+
+        Returns
+        -------
+        Any
+            A Spark data type
+        """
+
+        if data_type in constants.DATA_TYPE_MAPPING:
+            spark_data_type = constants.DATA_TYPE_MAPPING[data_type]
+        else:
+            spark_data_type = self._handle_unknown_data_type(data_type)
+
+        return spark_data_type
+
+    def _get_data_type_from_dict(self, data_type: Dict) -> Any:
+        """
+        Returns a Spark data type for a given data type
+
+        Parameters
+        ----------
+        data_type : Dict
+            Data type to convert to a Spark data type
+
+        Returns
+        -------
+        Any
+            A Spark data type
+        """
+
+        if "type" in data_type:
+            return self._get_data_type_from_mapping(data_type["type"])
+        else:
+            return self._handle_unknown_data_type(data_type)
+
+    def _get_superior_type_from_list(self, data_type_list: List[Any]) -> Any:
+        """
+        Resolves a list data type to a Spark data type
+
+        Parameters
+        ----------
+        data_type_list : List
+            List data type to resolve
+
+        Returns
+        -------
+        Any
+            A Spark data type
+        """
+
+        spark_data_type_list = data_type_list.copy()
+
+        if "null" in spark_data_type_list:
+            spark_data_type_list.remove("null")
+
+        for index, data_type in enumerate(spark_data_type_list):
+            if type(data_type) is dict:
+                spark_data_type_list[index] = self._get_data_type_from_dict(data_type)
+            elif data_type in constants.DATA_TYPE_MAPPING:
+                spark_data_type_list[index] = constants.DATA_TYPE_MAPPING[data_type]
+            else:
+                spark_data_type_list[index] = self._handle_unknown_data_type(data_type)
+
+        if len(data_type_list) == 0:
+            return constants.STRING_TYPE
+        elif len(data_type_list) == 1:
+            return spark_data_type_list[0]
+        else:
+            return self._get_superior_spark_type(spark_data_type_list)
+
+    def _get_superior_spark_type(self, spark_data_type_list: List[Any]) -> Any:
+        """
+        Returns the superior Spark data type from a list of Spark data types
+
+        Parameters
+        ----------
+        spark_data_type_list : List
+            List of Spark data types
+
+        Returns
+        -------
+        Any
+            A Spark data type
+        """
+
+        spark_data_type_set = set(spark_data_type_list)
+
+        # Conflicting types are datatypes which upon conversion can
+        # lead to a loss of information
+        are_conflicting_types = False
+        are_integer_types = False
+        are_float_types = False
+        are_string_types = False
+        are_boolean_types = False
+
+        if len(spark_data_type_set.intersection(constants.INTEGER_TYPES)) > 0:
+            are_integer_types = True
+
+        if len(spark_data_type_set.intersection(constants.FLOATING_TYPES)) > 0:
+            are_float_types = True
+
+        if constants.STRING_TYPE in spark_data_type_set:
+            are_string_types = True
+
+        if constants.BOOLEAN_TYPE in spark_data_type_set:
+            are_boolean_types = True
+
+        if (
+            int(are_integer_types)
+            + int(are_float_types)
+            + int(are_string_types)
+            + int(are_boolean_types)
+            > 1
+        ):
+            are_conflicting_types = True
+
+        if not are_conflicting_types:
+            if are_integer_types:
+                if constants.LONG_TYPE in spark_data_type_set:
+                    return constants.LONG_TYPE
+                elif constants.INT_TYPE in spark_data_type_set:
+                    return constants.INT_TYPE
+                elif constants.SHORT_TYPE in spark_data_type_set:
+                    return constants.SHORT_TYPE
+                else:
+                    return constants.BYTE_TYPE
+            elif are_float_types:
+                if constants.DOUBLE_TYPE in spark_data_type_set:
+                    return constants.DOUBLE_TYPE
+                else:
+                    return constants.FLOAT_TYPE
+            elif are_string_types:
+                return constants.STRING_TYPE
+            elif are_boolean_types:
+                return constants.BOOLEAN_TYPE
+        else:
+            return constants.STRING_TYPE
