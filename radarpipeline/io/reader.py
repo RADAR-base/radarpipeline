@@ -298,7 +298,7 @@ class AvroSchemaReader(SchemaReader):
         """
 
         if "type" in data_type:
-            return self._get_data_type_from_mapping(data_type["type"])
+            return self._get_field(data_type["type"])
         else:
             return self._handle_unknown_data_type(data_type)
 
