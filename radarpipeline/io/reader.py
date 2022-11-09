@@ -403,4 +403,7 @@ class AvroSchemaReader(SchemaReader):
             elif are_boolean_types:
                 return constants.BOOLEAN_TYPE
         else:
+            logger.warning(
+                f"Conflicting types: {spark_data_type_list}. Returning String type."
+            )
             return constants.STRING_TYPE
