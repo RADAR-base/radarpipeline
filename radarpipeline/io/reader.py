@@ -43,7 +43,8 @@ class SparkCSVDataReader(DataReader):
         spark.conf.set("spark.sql.execution.arrow.pyspark.enabled", "true")
         # Fallback to use non-Arrow conversion in case of errors
         spark.conf.set("spark.sql.execution.arrow.pyspark.fallback.enabled", "true")
-        # For further reading: https://spark.apache.org/docs/3.0.1/sql-pyspark-pandas-with-arrow.html
+        # For further reading:
+        # https://spark.apache.org/docs/3.0.1/sql-pyspark-pandas-with-arrow.html
 
         spark.sparkContext.setLogLevel("ERROR")
         logger.info("Spark Session created")
