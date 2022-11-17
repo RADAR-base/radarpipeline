@@ -25,6 +25,9 @@ class RadarData(Data):
     def set_data(self, data: Dict[str, RadarUserData]) -> None:
         self._data = data
 
+    def get_data_type(self) -> str:
+        return self.df_type
+
     def get_data_keys(self) -> List[str]:
         return list(self._data.keys())
 

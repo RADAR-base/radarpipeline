@@ -6,8 +6,8 @@ import pathlib
 import sys
 from typing import Any, Dict, List, Union
 
-from git.repo import Repo
 from git.exc import GitCommandError
+from git.repo import Repo
 
 from radarpipeline.common import utils
 from radarpipeline.features import Feature, FeatureGroup
@@ -173,7 +173,11 @@ class Project:
                 try:
                     repo.git.checkout(feature_branch)
                 except GitCommandError:
-                    logger.warning(f"Branch {feature_branch} does not exist. Using the {repo.active_branch.name} branch instead.")
+                    logger.warning(
+                        "Branch %s does not exist. Using the %s branch instead.",
+                        feature_branch,
+                        repo.active_branch.name,
+                    )
                     feature_branch = repo.active_branch.name
                     repo.git.checkout(feature_branch)
                 repo.remotes.origin.pull(feature_branch)

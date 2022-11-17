@@ -21,7 +21,7 @@ def logger_init(level: int = logging.INFO) -> None:
     logger.setLevel(level)
 
     # File handler
-    path = "log"
+    path = "logs"
     year = str(datetime.now().year)
     month = str(datetime.now().month)
     filename = datetime.now().strftime("%Y%m%d") + "_logfile.log"

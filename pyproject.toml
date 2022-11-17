@@ -12,5 +12,13 @@ exclude = '''
     | buck-out
     | build
     | dist
+    | env
+    | venv
+    | .vscode
+    | .pytest_cache
+    | logs
+    | temp
+    | tmp
+    | output
 )/
 '''
