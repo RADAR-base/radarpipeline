@@ -1,6 +1,7 @@
 <h1 align="center">RADAR Pipeline</h1>
 
 <p align="center">
+<a href="https://github.com/RADAR-base/radarpipeline"><img alt="GitHub branch checks state" src="https://img.shields.io/github/checks-status/RADAR-base/radarpipeline/main"></a>
 <a href="https://github.com/RADAR-base/radarpipeline/issues"><img alt="GitHub issues" src="https://img.shields.io/github/issues/RADAR-base/radarpipeline"></a>
 <a href="https://github.com/thepushkarp/radarpipeline/pulls"><img alt="GitHub pull requests" src="https://img.shields.io/github/issues-pr/radar-base/radarpipeline"></a>
 <a href="https://github.com/RADAR-base/radarpipeline/network"><img alt="GitHub forks" src="https://img.shields.io/github/forks/RADAR-base/radarpipeline"></a>
