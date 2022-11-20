@@ -11,3 +11,5 @@ pyspark[sql]==3.3.0
 GitPython==3.1.27
 pre-commit
 pytest
+pytest-cov
+pytest-mock

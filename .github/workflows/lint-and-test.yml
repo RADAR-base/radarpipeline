@@ -39,4 +39,4 @@ jobs:
                   flake8 radarpipeline/ --count --exit-zero --max-complexity=15 --max-line-length=88 --statistics
             - name: Test with pytest
               run: |
-                  pytest
+                  pytest --cov=radarpipeline tests/

@@ -102,6 +102,7 @@ def get_repo_name_from_url(url: str) -> str:
     str
         Name of the repository
     """
+    url = url.rstrip("/")
     last_slash_index = url.rfind("/")
     last_suffix_index = url.rfind(".git")
     if last_suffix_index < 0:
