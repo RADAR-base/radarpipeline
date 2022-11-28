@@ -99,10 +99,12 @@ class Project:
                 # Check if local_directory is absolute path. If not, then set it.
                 local_directory = self.config["input_data"]["local_directory"]
                 if isinstance(local_directory, list):
-                    local_directory = [self._get_absolute_path(l) for l in local_directory]
-                    for l in local_directory:
-                        if not os.path.exists(l):
-                            raise ValueError(f"Path does not exist: {l}")
+                    local_directory = [
+                        self._get_absolute_path(local_path)
+                        for local_path in local_directory]
+                    for local_path in local_directory:
+                        if not os.path.exists(local_path):
+                            raise ValueError(f"Path does not exist: {local_path}")
                 else:
                     local_directory = self._get_absolute_path(local_directory)
                     if not os.path.exists(local_directory):
