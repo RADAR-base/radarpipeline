@@ -2,10 +2,12 @@ import os
 from functools import reduce
 from typing import Any, Dict, List
 from urllib.parse import urlparse
+from pathlib import Path
 
 import pyspark.sql as ps
 import requests
 import yaml
+from strictyaml import load, Map, Str, Seq, Bool, Optional,load, YAMLError
 
 from radarpipeline.common import constants
 
@@ -36,10 +38,9 @@ def read_yaml(yaml_file_path: str) -> Dict[str, Any]:
         raise ValueError("Input file is not a yaml file")
     if os.stat(yaml_file_path).st_size == 0:
         raise ValueError("Input file is empty")
-
+    schema = get_yaml_schema()
     with open(yaml_file_path, "r", encoding=constants.ENCODING) as file:
-        config = yaml.load(file, Loader=yaml.FullLoader)
-
+        config = load(file.read(), schema).data
     return config
 
 
@@ -128,3 +129,33 @@ def pascal_to_snake_case(s: str) -> str:
         Converted string
     """
     return "".join(["_" + i.lower() if i.isupper() else i for i in s]).lstrip("_")
+
+
+def get_yaml_schema() -> Map:
+    schema = Map({
+        "project": Map({
+            "project_name": Str(),
+            Optional("description"): Str(),
+            Optional("version"): Str()
+        }),
+        "input_data": Map({
+            "data_location": Str(), # Figure it out later how to do category
+            "local_directory": Seq(Str()) | Str(),
+            "data_format": Str() # Same issue
+        }),
+        "configurations": Map({
+            "df_type": Str()
+            }),
+        "features": Seq(Map({
+            "location": Str(),
+            Optional("branch", default='main'): Str(),
+            "feature_groups": Seq(Str())
+        })),
+        "output_data": Map({
+            "output_location": Str(),
+            "local_directory": Str(),
+            "data_format": Str(),
+            "compress": Bool()
+        })
+    })
+    return schema

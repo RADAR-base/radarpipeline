@@ -12,6 +12,7 @@ from git.repo import Repo
 from radarpipeline.common import utils
 from radarpipeline.features import Feature, FeatureGroup
 from radarpipeline.io import PandasDataWriter, SparkCSVDataReader, SparkDataWriter
+from strictyaml import load, YAMLError
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +51,11 @@ class Project:
         """
 
         if isinstance(self.input_data, str):
-            config = utils.read_yaml(self.input_data)
+            try:
+                config = utils.read_yaml(self.input_data)
+            except YAMLError as err:
+                logger.error(f"Error while reading config file: {err}")
+                sys.exit(1)
         elif isinstance(self.input_data, dict):
             config = self.input_data
         else:
