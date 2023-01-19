@@ -4,11 +4,17 @@ import traceback
 
 from radarpipeline import Project
 from radarpipeline.common.logger import logger_init
+from pyspark.sql import SparkSession
 
 logger_init()
 
 logger = logging.getLogger(__name__)
 
+spark = SparkSession.builder.\
+        master('local').\
+        appName('foo').\
+        getOrCreate()
+spark.sparkContext.setLogLevel('WARN')
 
 def run():
     """
