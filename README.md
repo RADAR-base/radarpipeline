@@ -15,7 +15,7 @@
 
 ## Wiki
 
-Please visit the [RADAR Pipeline Wiki](https://github.com/RADAR-base/radarpipeline/wiki) to learn more about RADAR Pipeline.
+Please visit the [RADAR Pipeline Wiki](https://github.com/RADAR-base/radarpipeline/wiki) to learn more about RADAR Pipeline. Also see the [RADAR-base Analytics Catalogue](https://github.com/RADAR-base-Analytics) for available pipelines for processing RADAR-base data.
 
 Wiki resources:
 
@@ -100,3 +100,8 @@ Wiki resources:
 ## License
 
 This project is licensed under the [ Apache License, Version 2.0](https://github.com/RADAR-base/radarpipeline/blob/main/LICENSE).
+
+## Citation & Acknowledgment 
+Please use citation [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7249526.svg)](https://doi.org/10.5281/zenodo.7249526) or or see [CITATION.cff](/CITATION.cff)
+
+[Pushkar patel](https://github.com/thepushkarp) has done a great amount of work under Google Summer of Code 2022. His work report can be found [here](https://thepushkarp.github.io/RADAR-Base-GSoC-2022-Report/). We would like to thank Pushkar for all his contribution and GSoC for giving us this opportunity. 
