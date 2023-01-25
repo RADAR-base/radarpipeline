@@ -407,7 +407,11 @@ class Project:
             if self.computable_feature_names[i][0] == 'all':
                 total_required_data.update(feature_group.get_required_data())
             else:
-                total_required_data.update(feature_group.get_listed_required_data(self.computable_feature_names[i]))
+                total_required_data.update(
+                    feature_group.get_listed_required_data(
+                        self.computable_feature_names[i]
+                    )
+                )
         logger.info(f"Total required data: {total_required_data}")
         return list(total_required_data)
 
@@ -445,10 +449,13 @@ class Project:
         """
         Computes the features from the ingested data
         """
-        self.computable_feature_names = self.config["features"][0]['feature_names']
+        self.computable_feature_names = self.config[
+            "features"][0]['feature_names']
         for i, feature_group in enumerate(self.feature_groups):
             if self.computable_feature_names[i][0] == "all":
-                feature_names, feature_values = feature_group.get_all_features(self.data)
+                feature_names, feature_values = feature_group.get_all_features(
+                    self.data
+                )
             else:
                 feature_names, feature_values = feature_group.get_listed_features(
                     self.computable_feature_names[i], self.data,
