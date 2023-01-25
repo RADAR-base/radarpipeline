@@ -40,7 +40,7 @@ class SparkCSVDataReader(DataReader):
         )
 
         # Enable Apache Arrow for optimizations in Spark to Pandas conversion
-        spark.conf.set("spark.sql.execution.arrow.pyspark.enabled", "true")
+        spark.conf.set("spark.sql.execution.arrow.pyspark.enabled", "false")
         # Fallback to use non-Arrow conversion in case of errors
         spark.conf.set("spark.sql.execution.arrow.pyspark.fallback.enabled", "true")
         # For further reading:

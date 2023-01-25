@@ -164,7 +164,15 @@ class Project:
                 raise ValueError(
                     f"feature_groups array cannot be empty at index {index}"
                 )
+            if "feature_names" not in feature:
+                raise ValueError(
+                    f"Key not present in the config: feature_groups at index {index}"
+                )
 
+            if len(feature["feature_names"]) == 0:
+                raise ValueError(
+                    f"feature_groups array cannot be empty at index {index}"
+                )
             feature_location = feature["location"]
 
             if utils.is_valid_github_path(feature_location):
@@ -436,9 +444,14 @@ class Project:
         """
         Computes the features from the ingested data
         """
-
-        for feature_group in self.feature_groups:
-            feature_names, feature_values = feature_group.get_all_features(self.data)
+        self.computable_feature_names = self.config["features"][0]['feature_names']
+        for i, feature_group in enumerate(self.feature_groups):
+            if self.computable_feature_names[i][0] == "all":
+                feature_names, feature_values = feature_group.get_all_features(self.data)
+            else:
+                feature_names, feature_values = feature_group.get_listed_features(
+                    self.computable_feature_names[i], self.data,
+                )
             for feature_name, feature_value in zip(feature_names, feature_values):
                 self.features[feature_name] = feature_value
 

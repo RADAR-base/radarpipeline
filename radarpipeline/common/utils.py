@@ -7,7 +7,7 @@ from pathlib import Path
 import pyspark.sql as ps
 import requests
 import yaml
-from strictyaml import load, Map, Str, Seq, Bool, Optional, YAMLError
+from strictyaml import load, Map, Str, Seq, Bool, Optional, YAMLError, CommaSeparated
 
 from radarpipeline.common import constants
 
@@ -149,7 +149,8 @@ def get_yaml_schema() -> Map:
         "features": Seq(Map({
             "location": Str(),
             Optional("branch", default='main'): Str(),
-            "feature_groups": Seq(Str())
+            "feature_groups": Seq(Str()),
+            "feature_names": Seq(CommaSeparated(Str()))
         })),
         "output_data": Map({
             "output_location": Str(),
