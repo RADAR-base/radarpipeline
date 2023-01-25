@@ -401,13 +401,14 @@ class Project:
         List[str]
             List of all the required data
         """
-
+        self.computable_feature_names = self.config["features"][0]['feature_names']
         total_required_data = set()
-        for feature_group in self.feature_groups:
-            total_required_data.update(feature_group.get_required_data())
-
+        for i, feature_group in enumerate(self.feature_groups):
+            if self.computable_feature_names[i][0] == 'all':
+                total_required_data.update(feature_group.get_required_data())
+            else:
+                total_required_data.update(feature_group.get_listed_required_data(self.computable_feature_names[i]))
         logger.info(f"Total required data: {total_required_data}")
-
         return list(total_required_data)
 
     def fetch_data(self) -> None:

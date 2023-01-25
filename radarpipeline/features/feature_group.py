@@ -29,6 +29,13 @@ class FeatureGroup(ABC):
     def get_required_data(self) -> List[str]:
         return self.required_input_data
 
+    def get_listed_required_data(self, required_features: List[str]) -> List[str]:
+        required_input_data = set()
+        for feature in self.features:
+            if feature.name in required_features:
+                required_input_data.update(feature.get_required_data())
+        return list(required_input_data)
+
     def _compute_required_data(self) -> List[str]:
         """
         Compute the required data for each feature in the group.
