@@ -35,12 +35,46 @@ class SparkCSVDataReader(DataReader):
         SparkSession
             A SparkSession object
         """
+
+        """
+        Spark configuration documentation:
+        https://spark.apache.org/docs/latest/configuration.html
+
+        `spark.executor.instances` is the number of executors to
+        launch for an application.
+
+        `spark.executor.cores` is the number of cores to =
+        use on each executor.
+
+        `spark.executor.memory` is the amount of memory to
+        use per executor process.
+
+        `spark.driver.memory` is the amount of memory to use for the driver process,
+        i.e. where SparkContext is initialized, in MiB unless otherwise specified.
+
+        `spark.memory.offHeap.enabled` is to enable off-heap memory allocation
+
+        `spark.memory.offHeap.size` is the absolute amount of memory which can be used
+        for off-heap allocation, in bytes unless otherwise specified.
+
+        `spark.driver.maxResultSize` is the limit of total size of serialized results of
+        all partitions for each Spark action (e.g. collect) in bytes.
+        Should be at least 1M, or 0 for unlimited.
+        """
         spark = (
-            SparkSession.builder.master("local").appName("radarpipeline").getOrCreate()
+            SparkSession.builder.master("local").appName("radarpipeline")
+            .config('spark.executor.instances', 4)
+            .config('spark.executor.cores', 4)
+            .config('spark.executor.memory', '10g')
+            .config('spark.driver.memory', '15g')
+            .config('spark.memory.offHeap.enabled', True)
+            .config('spark.memory.offHeap.size', '20g')
+            .config('spark.driver.maxResultSize', '0')
+            .getOrCreate()
         )
 
         # Enable Apache Arrow for optimizations in Spark to Pandas conversion
-        spark.conf.set("spark.sql.execution.arrow.pyspark.enabled", "false")
+        spark.conf.set("spark.sql.execution.arrow.pyspark.enabled", "true")
         # Fallback to use non-Arrow conversion in case of errors
         spark.conf.set("spark.sql.execution.arrow.pyspark.fallback.enabled", "true")
         # For further reading:

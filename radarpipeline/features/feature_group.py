@@ -84,7 +84,7 @@ class FeatureGroup(ABC):
                 feature_names.append(feature.name)
                 preprocessed_feature = feature.preprocess(preprocessed_data)
                 feature_values.append(feature.calculate(preprocessed_feature))
-        # Check  if all the required_features name are in feature_names.
+        # Check if all the required_features name are in feature_names.
         # if not, log warn the error and return the rest of the features
         if len(feature_names) != len(required_features):
             logger.warn("The required_features are not in the feature_names")
