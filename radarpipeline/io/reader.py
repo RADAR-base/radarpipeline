@@ -35,8 +35,42 @@ class SparkCSVDataReader(DataReader):
         SparkSession
             A SparkSession object
         """
+
+        """
+        Spark configuration documentation:
+        https://spark.apache.org/docs/latest/configuration.html
+
+        `spark.executor.instances` is the number of executors to
+        launch for an application.
+
+        `spark.executor.cores` is the number of cores to =
+        use on each executor.
+
+        `spark.executor.memory` is the amount of memory to
+        use per executor process.
+
+        `spark.driver.memory` is the amount of memory to use for the driver process,
+        i.e. where SparkContext is initialized, in MiB unless otherwise specified.
+
+        `spark.memory.offHeap.enabled` is to enable off-heap memory allocation
+
+        `spark.memory.offHeap.size` is the absolute amount of memory which can be used
+        for off-heap allocation, in bytes unless otherwise specified.
+
+        `spark.driver.maxResultSize` is the limit of total size of serialized results of
+        all partitions for each Spark action (e.g. collect) in bytes.
+        Should be at least 1M, or 0 for unlimited.
+        """
         spark = (
-            SparkSession.builder.master("local").appName("radarpipeline").getOrCreate()
+            SparkSession.builder.master("local").appName("radarpipeline")
+            .config('spark.executor.instances', 4)
+            .config('spark.executor.cores', 4)
+            .config('spark.executor.memory', '10g')
+            .config('spark.driver.memory', '15g')
+            .config('spark.memory.offHeap.enabled', True)
+            .config('spark.memory.offHeap.size', '20g')
+            .config('spark.driver.maxResultSize', '0')
+            .getOrCreate()
         )
 
         # Enable Apache Arrow for optimizations in Spark to Pandas conversion
@@ -63,47 +97,38 @@ class SparkCSVDataReader(DataReader):
 
         user_data_dict = {}
 
-        for uid in os.listdir(self.source_path):
-            # Skip hidden files
-            if uid[0] == ".":
-                continue
-
-            logger.info(f"Reading data for user: {uid}")
-
-            variable_data_dict = {}
-
-            for dirname in self.required_data:
-                if dirname not in os.listdir(os.path.join(self.source_path, uid)):
+        if not isinstance(self.source_path, list):
+            self.source_path = [self.source_path]
+        for source_path_item in self.source_path:
+            for uid in os.listdir(source_path_item):
+                # Skip hidden files
+                if uid[0] == ".":
                     continue
-
-                logger.info(f"Reading data for variable: {dirname}")
-
-                absolute_dirname = os.path.abspath(
-                    os.path.join(self.source_path, uid, dirname)
-                )
-
-                data_files = [
-                    os.path.join(absolute_dirname, f)
-                    for f in os.listdir(absolute_dirname)
-                    if f.endswith(".csv.gz")
-                ]
-
-                schema = None
-                schema_reader = AvroSchemaReader(absolute_dirname)
-
-                if schema_reader.is_schema_present():
-                    logger.info("Schema found")
-                    schema = schema_reader.get_schema()
-                else:
-                    logger.info("Schema not found, inferring from data file")
-
-                variable_data = self._read_variable_data_files(data_files, schema)
-
-                if variable_data.get_data_size() > 0:
-                    variable_data_dict[dirname] = variable_data
-
-            user_data_dict[uid] = RadarUserData(variable_data_dict, self.df_type)
-
+                logger.info(f"Reading data for user: {uid}")
+                variable_data_dict = {}
+                for dirname in self.required_data:
+                    if dirname not in os.listdir(os.path.join(source_path_item, uid)):
+                        continue
+                    logger.info(f"Reading data for variable: {dirname}")
+                    absolute_dirname = os.path.abspath(
+                        os.path.join(source_path_item, uid, dirname)
+                    )
+                    data_files = [
+                        os.path.join(absolute_dirname, f)
+                        for f in os.listdir(absolute_dirname)
+                        if f.endswith(".csv.gz")
+                    ]
+                    schema = None
+                    schema_reader = AvroSchemaReader(absolute_dirname)
+                    if schema_reader.is_schema_present():
+                        logger.info("Schema found")
+                        schema = schema_reader.get_schema()
+                    else:
+                        logger.info("Schema not found, inferring from data file")
+                    variable_data = self._read_variable_data_files(data_files, schema)
+                    if variable_data.get_data_size() > 0:
+                        variable_data_dict[dirname] = variable_data
+                user_data_dict[uid] = RadarUserData(variable_data_dict, self.df_type)
         radar_data = RadarData(user_data_dict, self.df_type)
         return radar_data
 

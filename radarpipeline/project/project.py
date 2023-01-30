@@ -12,6 +12,7 @@ from git.repo import Repo
 from radarpipeline.common import utils
 from radarpipeline.features import Feature, FeatureGroup
 from radarpipeline.io import PandasDataWriter, SparkCSVDataReader, SparkDataWriter
+from strictyaml import load, YAMLError
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +51,11 @@ class Project:
         """
 
         if isinstance(self.input_data, str):
-            config = utils.read_yaml(self.input_data)
+            try:
+                config = utils.read_yaml(self.input_data)
+            except YAMLError as err:
+                logger.error(f"Error while reading config file: {err}")
+                sys.exit(1)
         elif isinstance(self.input_data, dict):
             config = self.input_data
         else:
@@ -98,9 +103,17 @@ class Project:
             else:
                 # Check if local_directory is absolute path. If not, then set it.
                 local_directory = self.config["input_data"]["local_directory"]
-                local_directory = self._get_absolute_path(local_directory)
-                if not os.path.exists(local_directory):
-                    raise ValueError(f"Path does not exist: {local_directory}")
+                if isinstance(local_directory, list):
+                    local_directory = [
+                        self._get_absolute_path(local_path)
+                        for local_path in local_directory]
+                    for local_path in local_directory:
+                        if not os.path.exists(local_path):
+                            raise ValueError(f"Path does not exist: {local_path}")
+                else:
+                    local_directory = self._get_absolute_path(local_directory)
+                    if not os.path.exists(local_directory):
+                        raise ValueError(f"Path does not exist: {local_directory}")
                 self.config["input_data"]["local_directory"] = local_directory
 
             # Raise error if data_format it not valid input formats
@@ -151,7 +164,15 @@ class Project:
                 raise ValueError(
                     f"feature_groups array cannot be empty at index {index}"
                 )
+            if "feature_names" not in feature:
+                raise ValueError(
+                    f"Key not present in the config: feature_groups at index {index}"
+                )
 
+            if len(feature["feature_names"]) == 0:
+                raise ValueError(
+                    f"feature_groups array cannot be empty at index {index}"
+                )
             feature_location = feature["location"]
 
             if utils.is_valid_github_path(feature_location):
@@ -380,13 +401,18 @@ class Project:
         List[str]
             List of all the required data
         """
-
+        self.computable_feature_names = self.config["features"][0]['feature_names']
         total_required_data = set()
-        for feature_group in self.feature_groups:
-            total_required_data.update(feature_group.get_required_data())
-
+        for i, feature_group in enumerate(self.feature_groups):
+            if self.computable_feature_names[i][0] == 'all':
+                total_required_data.update(feature_group.get_required_data())
+            else:
+                total_required_data.update(
+                    feature_group.get_listed_required_data(
+                        self.computable_feature_names[i]
+                    )
+                )
         logger.info(f"Total required data: {total_required_data}")
-
         return list(total_required_data)
 
     def fetch_data(self) -> None:
@@ -423,9 +449,17 @@ class Project:
         """
         Computes the features from the ingested data
         """
-
-        for feature_group in self.feature_groups:
-            feature_names, feature_values = feature_group.get_all_features(self.data)
+        self.computable_feature_names = self.config[
+            "features"][0]['feature_names']
+        for i, feature_group in enumerate(self.feature_groups):
+            if self.computable_feature_names[i][0] == "all":
+                feature_names, feature_values = feature_group.get_all_features(
+                    self.data
+                )
+            else:
+                feature_names, feature_values = feature_group.get_listed_features(
+                    self.computable_feature_names[i], self.data,
+                )
             for feature_name, feature_value in zip(feature_names, feature_values):
                 self.features[feature_name] = feature_value
 
