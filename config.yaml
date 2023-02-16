@@ -4,7 +4,7 @@ project:
     version: mock_version
 
 input_data:
-    data_location: mock
+    data_location: local
     local_directory: mockdata/mockdata
     data_format: csv
 
@@ -16,6 +16,8 @@ features:
       branch: main
       feature_groups:
           - MockFeatureGroup
+      feature_names:
+        - all
 
 output_data:
     output_location: local
