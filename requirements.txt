@@ -12,3 +12,4 @@ GitPython==3.1.27
 pre-commit
 pytest
 strictyaml
+pyspark-test==0.2.0
