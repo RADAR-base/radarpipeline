@@ -1,5 +1,6 @@
 import unittest
 from radarpipeline.io import SparkDataWriter, PandasDataWriter
+from radarpipeline.common import constants
 import pandas as pd
 import pathlib as pl
 import os
@@ -16,6 +17,7 @@ class TestSparkDataWriter(unittest.TestCase):
         self.output_dir = "tests/resources/test_output/"
         PANDAS_MOCK_PATH = "tests/resources/test_data/test_participant/android_phone_step_count/test_variable_data.csv.gz"
         self.mock_pandas = pd.read_csv(PANDAS_MOCK_PATH)
+        self.mock_pandas['key.projectId'] = self.mock_pandas['key.projectId'].str.strip()
         spark = SparkSession.builder.master("local").appName("radarpipeline").getOrCreate()
         #Create PySpark DataFrame from Pandas
         self.sparkDF = spark.createDataFrame(self.mock_pandas )
@@ -30,8 +32,15 @@ class TestSparkDataWriter(unittest.TestCase):
         # check if the file has the correct content
         ## spark read the directory
         spark = SparkSession.builder.master("local").appName("radarpipeline").getOrCreate()
-        output_file = spark.read.csv(f"{self.output_dir}" + "test_feature",  header=True, schema=self.sparkDF.schema)
+        output_file = spark.read.csv(f"{self.output_dir}" + "test_feature",
+                                    header=True,
+                                    schema=self.sparkDF.schema,
+                                    sep=constants.CSV_DELIMITER,
+                                    encoding=constants.ENCODING,
+                                    lineSep=constants.LINESEP
+                                    )
         assert_pyspark_df_equal(output_file, self.sparkDF)
+        assert_frame_equal(output_file.toPandas(), self.mock_pandas)
 
     def tearDown(self):
         # delete the file
