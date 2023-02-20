@@ -67,5 +67,3 @@ class TestProject(unittest.TestCase):
 
     def tearDown(self) -> None:
         del self.project
-
-
