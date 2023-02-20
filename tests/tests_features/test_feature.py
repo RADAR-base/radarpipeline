@@ -1,6 +1,7 @@
 import unittest
 from radarpipeline.features import FeatureGroup, Feature
 
+
 class TestFeature(unittest.TestCase):
     class MockFeature(Feature):
         def preprocess(self, data):
@@ -10,7 +11,9 @@ class TestFeature(unittest.TestCase):
             pass
 
     def setUp(self):
-        self.mockfeature = self.MockFeature(name='mock feature', description='mock feature description', required_input_data=['mock data'])
+        self.mockfeature = self.MockFeature(name='mock feature',
+                                            description='mock feature description',
+                                            required_input_data=['mock data'])
 
     def test_get_required_data(self):
         self.assertEqual(self.mockfeature.get_required_data(), ['mock data'])

@@ -1,6 +1,7 @@
 import unittest
 from radarpipeline.features import FeatureGroup, Feature
 
+
 class TestFeature(unittest.TestCase):
     class MockFeature(Feature):
         def __init__(self):
@@ -31,7 +32,12 @@ class TestFeature(unittest.TestCase):
             pass
 
     def setUp(self):
-        self.mockfeaturegroup = self.MockFeatureGroup(name='mock feature group', description='mock feature group description', features=[self.MockFeature, self.MockFeature2])
+        self.mockfeaturegroup = self.MockFeatureGroup(name='mock feature group',
+                                                      description=("mock feature "
+                                                                   "group description"),
+                                                      features=[self.MockFeature,
+                                                                self.MockFeature2])
 
     def test_get_required_data(self):
-        self.assertCountEqual(self.mockfeaturegroup.get_required_data(), ['mock_data_1', 'mock_data_2'])
+        self.assertCountEqual(self.mockfeaturegroup.get_required_data(),
+                              ['mock_data_1', 'mock_data_2'])
