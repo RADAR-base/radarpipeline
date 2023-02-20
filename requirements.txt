@@ -13,3 +13,5 @@ pre-commit
 pytest
 strictyaml
 pyspark-test==0.2.0
+pytest-cov
+pytest-mock
