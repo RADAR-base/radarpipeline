@@ -34,7 +34,10 @@ class TestIntegration(unittest.TestCase):
         expected_df = pd.read_csv(os.path.join(expected_output_path,
                                                "phone_battery_charging_duration.csv"))
         actual_df = pd.read_csv(path)
-        assert_frame_equal(expected_df, actual_df)
+        assert_frame_equal(expected_df.sort_values(['key.userId', 'date'])
+                           .reset_index(drop=True),
+                           actual_df.sort_values(['key.userId', 'date'])
+                           .reset_index(drop=True))
         path.unlink()
         path = pl.Path(os.path.join(self.output_dir, "step_count_per_day.csv"))
         self.assertIsFile(path)
@@ -42,5 +45,8 @@ class TestIntegration(unittest.TestCase):
         expected_df = pd.read_csv(os.path.join(expected_output_path,
                                                "step_count_per_day.csv"))
         actual_df = pd.read_csv(path)
-        assert_frame_equal(expected_df, actual_df)
+        assert_frame_equal(expected_df.sort_values(['key.userId', 'date'])
+                           .reset_index(drop=True),
+                           actual_df.sort_values(['key.userId', 'date'])
+                           .reset_index(drop=True))
         path.unlink()
