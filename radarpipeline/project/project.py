@@ -30,7 +30,7 @@ class Project:
 
         self.valid_input_formats = ["csv", "csv.gz"]
         self.valid_output_formats = ["csv"]
-        self.input_data = input_data
+        self.input_data = self._resolve_input_data(input_data)
         self.feature_path = os.path.abspath(
             os.path.join("radarpipeline", "features", "features")
         )
@@ -39,6 +39,32 @@ class Project:
         self._validate_config()
         self.feature_groups = self._get_feature_groups()
         self.total_required_data = self._get_total_required_data()
+
+    def _resolve_input_data(self, input_data) -> str:
+        """
+        Resolves the input_data variable and check
+        if it is a local path or a remote github url.
+        Returns:
+            str: Path to the config file
+        """
+        # checking if input_data is a local path
+        if isinstance(input_data, str):
+            if os.path.exists(input_data):
+                return input_data
+            elif utils.is_valid_github_path(input_data):
+                # get config.yaml from github
+                try:
+                    Repo.clone_from(input_data, "temp")
+                    input_data = os.path.join("/tmp", "config.yaml")
+                    # delete directory /tmp/config.yaml
+                    os.remove(input_data)
+                    return input_data
+                except GitCommandError as err:
+                    logger.error(f"Error while cloning the repo: {err}")
+                    sys.exit(1)
+            else:
+                raise ValueError(f"File or URL does not exist: {input_data}")
+        return input_data
 
     def _get_config(self) -> Dict[str, Any]:
         """
