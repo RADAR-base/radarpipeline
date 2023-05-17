@@ -433,3 +433,46 @@ class AvroSchemaReader(SchemaReader):
                 f"Conflicting types: {spark_data_type_list}. Returning String type."
             )
             return constants.STRING_TYPE
+
+
+class Reader():
+    '''
+    Class for reading data from a file
+    Reader(data_type : str, data_path: str, variables: Union[str, List])
+    reader = Reader(...)
+    reader.get_data(variables=Union[List, str])
+    reader.get_user_data(user_id=..)
+    '''
+    def __init__(self, data_type: str, data_path: str, variables: Union[str, List]):
+        '''
+        Parameters : data_type : str, data_path: str, variables: Union[str, List]
+        data_type : str
+            Type of data to be read
+            Only supports csv for now
+        data_path : str
+            Path to the data directory
+        variables : Union[str, List]
+            List of variables to be read
+        '''
+        self.data_type = data_type
+        self.data_path = data_path
+        # check if variables is a str
+        # If so, convert it to a list
+        if isinstance(variables, str):
+            variables = [variables]
+        self.variables = variables
+        config_dict = {"local_directory": self.data_path}
+        # check if data_type is csv
+        if self.data_type == 'csv':
+            self.reader_class = SparkCSVDataReader(config_dict, self.variables)
+        else:
+            raise NotImplementedError("Only csv data type is supported for now")
+
+    def read_data(self):
+        self.data = self.reader_class.read_data()
+
+    def get_data(self, variables: Union[List, str]) -> RadarData:
+        return self.data.get_combined_data_by_variable(variables)
+
+    def get_user_data(self, user_id: str) -> RadarData:
+        return self.data.get_data_by_user_id(user_id)
