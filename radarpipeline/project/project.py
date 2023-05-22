@@ -95,7 +95,7 @@ class Project:
         Validates the config to check if all the keys are present
         """
 
-        required_keys = ["project", "input_data", "features", "output_data"]
+        required_keys = ["project", "input", "features", "output"]
         for key in required_keys:
             if key not in self.config:
                 raise ValueError(f"Key not present in the config: {key}")
@@ -112,23 +112,23 @@ class Project:
         Validates the input data config
         """
 
-        if self.config["input_data"]["data_location"] == "sftp":
+        if self.config["input"]["data_type"] == "sftp":
             sftp_config_keys = [
                 "sftp_host",
                 "sftp_username",
-                "sftp_directory",
+                "sftp_source_path",
                 "sftp_private_key",
             ]
             for key in sftp_config_keys:
-                if key not in self.config["input_data"]:
+                if key not in self.config["input"]["config"]:
                     raise ValueError(f"Key not present in the config: {key}")
 
-        elif self.config["input_data"]["data_location"] == "local":
-            if "local_directory" not in self.config["input_data"]:
-                raise ValueError("Key not present in the config: local_directory")
+        elif self.config["input"]["data_type"] == "local":
+            if "source_path" not in self.config["input"]["config"]:
+                raise ValueError("Key not present in the config: source_path")
             else:
                 # Check if local_directory is absolute path. If not, then set it.
-                local_directory = self.config["input_data"]["local_directory"]
+                local_directory = self.config["input_data"]["config"]["source_path"]
                 if isinstance(local_directory, list):
                     local_directory = [
                         self._get_absolute_path(local_path)
@@ -146,7 +146,7 @@ class Project:
             if self.config["input_data"]["data_format"] not in self.valid_input_formats:
                 raise ValueError("Invalid value for key in input_data: data_format")
 
-        elif self.config["input_data"]["data_location"] == "mock":
+        elif self.config["input"]["data_type"] == "mock":
             self._update_mock_data()
 
         else:
@@ -244,7 +244,7 @@ class Project:
         Validates the output data config
         """
 
-        if self.config["output_data"]["output_location"] == "postgres":
+        if self.config["output"]["output_location"] == "postgres":
             postgres_config_keys = [
                 "postgres_host",
                 "postgres_username",
@@ -253,35 +253,31 @@ class Project:
                 "postgres_table",
             ]
             for key in postgres_config_keys:
-                if key not in self.config["output_data"]:
+                if key not in self.config["output"]['config']:
                     raise ValueError(f"Key not present in the config: {key}")
 
-        elif self.config["output_data"]["output_location"] == "local":
-            if "local_directory" not in self.config["output_data"]:
-                raise ValueError("Key not present in the config: local_directory")
+        elif self.config["output"]["output_location"] == "local":
+            if "target_path" not in self.config["output"]['config']:
+                raise ValueError("Key not present in the config: target_path")
             else:
                 # Check if local_directory is absolute path. If not, then set it.
-                local_directory = self.config["output_data"]["local_directory"]
+                local_directory = self.config["output"]['config']["target_path"]
                 local_directory = self._get_absolute_path(local_directory)
                 if not os.path.exists(local_directory):
                     os.makedirs(local_directory, exist_ok=True)
-                self.config["output_data"]["output_directory"] = local_directory
+                self.config["output"]['config']["target_path"] = local_directory
 
             # Raise error if data_format it not valid output formats
             if (
-                self.config["output_data"]["data_format"]
+                self.config["output"]["data_format"]
                 not in self.valid_output_formats
             ):
-                raise ValueError("Invalid value for key in output_data: data_format")
+                raise ValueError("Invalid value for key in output: data_format")
 
-            if "compress" not in self.config["output_data"]:
-                self.config["output_data"]["compress"] = False
-            if self.config["output_data"]["compress"] == "true":
-                self.config["output_data"]["compress"] = True
-
-        elif self.config["output_data"]["output_location"] == "mock":
-            pass
-
+            if "compress" not in self.config["output"]:
+                self.config["output"]["compress"] = False
+            if self.config["output"]["compress"] == "true":
+                self.config["output"]["compress"] = True
         else:
             raise ValueError("Key not present in the config: output_location")
 
@@ -445,29 +441,30 @@ class Project:
         """
         Fetches the data from the data source
         """
+        if 'spark_config' not in self.config:
+            self.config['spark_config'] = {}
 
-        if self.config["input_data"]["data_location"] == "local":
-            if self.config["input_data"]["data_format"] in self.valid_input_formats:
+        if self.config["input"]["data_type"] == "local":
+            if self.config["input"]["data_format"] in self.valid_input_formats:
                 self.data = SparkCSVDataReader(
-                    self.config["input_data"],
+                    self.config["input"],
                     self.total_required_data,
                     self.config["configurations"]["df_type"],
+                    self.config['spark_config']
                 ).read_data()
             else:
                 raise ValueError("Wrong data format")
 
-        elif self.config["input_data"]["data_location"] == "mock":
+        elif self.config["input"]["data_type"] == "mock":
             mock_config_input = {
-                "local_directory": os.path.join("mockdata", "mockdata")
+                "config": {
+                    "source_path": os.path.join("mockdata", "mockdata")
+                }
             }
-            mock_required_data = [
-                "android_phone_battery_level",
-                "android_phone_step_count",
-            ]
             self.data = SparkCSVDataReader(
-                mock_config_input, mock_required_data
+                mock_config_input, self.total_required_data,
+                spark_config=self.config['spark_config']
             ).read_data()
-
         else:
             raise ValueError("Wrong data location")
 
@@ -497,14 +494,14 @@ class Project:
         if self.config["configurations"]["df_type"] == "pandas":
             writer = PandasDataWriter(
                 self.features,
-                self.config["output_data"]["local_directory"],
-                self.config["output_data"]["compress"],
+                self.config["output"]['config']["target_path"],
+                self.config["output"]["compress"],
             )
         elif self.config["configurations"]["df_type"] == "spark":
             writer = SparkDataWriter(
                 self.features,
-                self.config["output_data"]["local_directory"],
-                self.config["output_data"]["compress"],
+                self.config["output"]['config']["target_path"],
+                self.config["output"]["compress"],
             )
         else:
             raise ValueError("Wrong df_type")

@@ -7,7 +7,8 @@ from pathlib import Path
 import pyspark.sql as ps
 import requests
 import yaml
-from strictyaml import load, Map, Str, Seq, Bool, Optional, YAMLError, CommaSeparated
+from strictyaml import load, Map, Int, Str, Seq, Bool, Optional
+from strictyaml import YAMLError, CommaSeparated, MapPattern
 
 from radarpipeline.common import constants
 
@@ -139,9 +140,9 @@ def get_yaml_schema() -> Map:
             Optional("description"): Str(),
             Optional("version"): Str()
         }),
-        "input_data": Map({
-            "data_location": Str(),
-            "local_directory": Seq(Str()) | Str(),
+        "input": Map({
+            "data_type": Str(),
+            "config": MapPattern(Str(), Str()),
             "data_format": Str()
         }),
         "configurations": Map({
@@ -153,11 +154,20 @@ def get_yaml_schema() -> Map:
             "feature_groups": Seq(Str()),
             "feature_names": Seq(CommaSeparated(Str()))
         })),
-        "output_data": Map({
+        "output": Map({
             "output_location": Str(),
-            "local_directory": Str(),
+            "config": MapPattern(Str(), Str()),
             "data_format": Str(),
             "compress": Bool()
-        })
+        }),
+        Optional("spark_config"): Map({
+            Optional("spark.executor.instances", default=4): Int(),
+            Optional("spark.executor.cores", default=4): Int(),
+            Optional("spark.executor.memory", default='10g'): Str(),
+            Optional("spark.driver.memory", default='15g'): Str(),
+            Optional("spark.memory.offHeap.enabled", default=True): Bool(),
+            Optional("spark.memory.offHeap.size", default='20g'): Str(),
+            Optional("spark.driver.maxResultSize", default='0'): Str(),
+        }),
     })
     return schema

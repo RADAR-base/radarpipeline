@@ -19,11 +19,23 @@ class SparkCSVDataReader(DataReader):
     Read CSV data from local directory using pySpark
     """
 
-    def __init__(self, config: Dict, required_data: List[str], df_type: str = "pandas"):
+    def __init__(self, config: Dict, required_data: List[str], df_type: str = "pandas",
+                 spark_config: Dict = {}):
         super().__init__(config)
+        default_spark_config = {'spark.executor.instances': 6,
+                                'spark.driver.memory': '10G',
+                                'spark.executor.cores': 4,
+                                'spark.executor.memory': '10g',
+                                'spark.memory.offHeap.enabled': True,
+                                'spark.memory.offHeap.size': '20g',
+                                'spark.driver.maxResultSize': '0'}
+
         self.required_data = required_data
         self.df_type = df_type
-        self.source_path = self.config.get("local_directory", "")
+        self.source_path = self.config['config'].get("source_path", "")
+        self.spark_config = default_spark_config
+        if spark_config is not None:
+            self.spark_config.update(spark_config)
         self.spark = self._initialize_spark_session()
 
     def _initialize_spark_session(self) -> ps.SparkSession:
@@ -63,13 +75,20 @@ class SparkCSVDataReader(DataReader):
         """
         spark = (
             SparkSession.builder.master("local").appName("radarpipeline")
-            .config('spark.executor.instances', 4)
-            .config('spark.executor.cores', 4)
-            .config('spark.executor.memory', '10g')
-            .config('spark.driver.memory', '15g')
-            .config('spark.memory.offHeap.enabled', True)
-            .config('spark.memory.offHeap.size', '20g')
-            .config('spark.driver.maxResultSize', '0')
+            .config('spark.executor.instances',
+                    self.spark_config['spark.executor.instances'])
+            .config('spark.executor.cores',
+                    self.spark_config['spark.executor.cores'])
+            .config('spark.executor.memory',
+                    self.spark_config['spark.executor.memory'])
+            .config('spark.driver.memory',
+                    self.spark_config['spark.driver.memory'])
+            .config('spark.memory.offHeap.enabled',
+                    self.spark_config['spark.memory.offHeap.enabled'])
+            .config('spark.memory.offHeap.size',
+                    self.spark_config['spark.memory.offHeap.size'])
+            .config('spark.driver.maxResultSize',
+                    self.spark_config['spark.driver.maxResultSize'])
             .getOrCreate()
         )
 
