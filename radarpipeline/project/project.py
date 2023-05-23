@@ -12,6 +12,7 @@ from git.repo import Repo
 from radarpipeline.common import utils
 from radarpipeline.features import Feature, FeatureGroup
 from radarpipeline.io import PandasDataWriter, SparkCSVDataReader, SparkDataWriter
+from radarpipeline.io import SftpDataReader
 from strictyaml import load, YAMLError
 
 logger = logging.getLogger(__name__)
@@ -465,6 +466,26 @@ class Project:
                 mock_config_input, self.total_required_data,
                 spark_config=self.config['spark_config']
             ).read_data()
+
+        elif self.config["input"]["data_type"] == "sftp":
+            sftp_data_reader = SftpDataReader(self.config["input"]["config"], self.total_required_data)
+            root_dir = sftp_data_reader.get_root_dir()
+            sftp_data_reader.read_sftp_data()
+            # Logging mentioned that the data is read from sftp
+            # and stored in the temp folder
+            # Next time to avoid redownloading, change config file
+            # to read from local
+            sftp_local_config = {
+                "config": {
+                    "source_path": root_dir
+                }
+            }
+            self.data = SparkCSVDataReader(
+                    sftp_local_config,
+                    self.total_required_data,
+                    self.config["configurations"]["df_type"],
+                    self.config['spark_config']
+                ).read_data()
         else:
             raise ValueError("Wrong data location")
 
