@@ -12,7 +12,7 @@ class ConfigValidator():
     def __init__(self, config, valid_input_formats, valid_output_formats) -> None:
         self.valid_input_formats = valid_input_formats
         self.valid_output_formats = valid_output_formats
-        self.config = cåååonfig
+        self.config = config
 
     def validate(self):
         """
@@ -57,7 +57,7 @@ class ConfigValidator():
 
         if self.config["input"]["data_type"] == "sftp":
             sftp_config_keys = [
-                "sftp_host",å
+                "sftp_host",
                 "sftp_username",
                 "sftp_source_path",
                 "sftp_private_key",

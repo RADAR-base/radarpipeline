@@ -38,7 +38,8 @@ class Project:
         )
         self.features = {}
         self.config = self._get_config()
-        self.validator = ConfigValidator(self.config, self.valid_input_formats, self.valid_output_formats)
+        self.validator = ConfigValidator(self.config, self.valid_input_formats,
+                                         self.valid_output_formats)
         self.validator.validate()
         self.feature_groups = self._get_feature_groups()
         self.total_required_data = self._get_total_required_data()
@@ -240,7 +241,8 @@ class Project:
             ).read_data()
 
         elif self.config["input"]["data_type"] == "sftp":
-            sftp_data_reader = SftpDataReader(self.config["input"]["config"], self.total_required_data)
+            sftp_data_reader = SftpDataReader(self.config["input"]["config"],
+                                              self.total_required_data)
             root_dir = sftp_data_reader.get_root_dir()
             logger.info("Reading data from sftp")
             sftp_data_reader.read_sftp_data()
