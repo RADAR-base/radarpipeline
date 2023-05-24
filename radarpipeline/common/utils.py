@@ -2,6 +2,7 @@ import os
 from functools import reduce
 from typing import Any, Dict, List
 from urllib.parse import urlparse
+import pathlib
 from pathlib import Path
 
 import pyspark.sql as ps
@@ -171,3 +172,21 @@ def get_yaml_schema() -> Map:
         }),
     })
     return schema
+
+
+def get_absolute_path(path: str) -> str:
+    """
+    Returns the absolute path of the path
+    Parameters
+    ----------
+    path: str
+        Path to be converted to absolute path
+    Returns
+    -------
+    str
+        Absolute path of the path
+    """
+    if not os.path.isabs(path):
+        pipeline_dir = pathlib.Path(__file__).parent.parent.parent.resolve()
+        path = os.path.join(pipeline_dir, path)
+    return path

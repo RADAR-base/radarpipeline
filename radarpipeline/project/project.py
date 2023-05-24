@@ -13,6 +13,7 @@ from radarpipeline.common import utils
 from radarpipeline.features import Feature, FeatureGroup
 from radarpipeline.io import PandasDataWriter, SparkCSVDataReader, SparkDataWriter
 from radarpipeline.io import SftpDataReader
+from radarpipeline.project.validations import ConfigValidator
 from strictyaml import load, YAMLError
 
 logger = logging.getLogger(__name__)
@@ -37,7 +38,8 @@ class Project:
         )
         self.features = {}
         self.config = self._get_config()
-        self._validate_config()
+        self.validator = ConfigValidator(self.config, self.valid_input_formats, self.valid_output_formats)
+        self.validator.validate()
         self.feature_groups = self._get_feature_groups()
         self.total_required_data = self._get_total_required_data()
 
@@ -90,236 +92,6 @@ class Project:
 
         logger.info("Config file read successfully")
         return config
-
-    def _validate_config(self) -> None:
-        """
-        Validates the config to check if all the keys are present
-        """
-
-        required_keys = ["project", "input", "features", "output"]
-        for key in required_keys:
-            if key not in self.config:
-                raise ValueError(f"Key not present in the config: {key}")
-
-        self._validate_input()
-        self._validate_configurations()
-        self._validate_features()
-        self._validate_output()
-
-        logger.info("Config file validated successfully")
-
-    def _validate_input(self) -> None:
-        """
-        Validates the input data config
-        """
-
-        if self.config["input"]["data_type"] == "sftp":
-            sftp_config_keys = [
-                "sftp_host",
-                "sftp_username",
-                "sftp_source_path",
-                "sftp_private_key",
-            ]
-            for key in sftp_config_keys:
-                if key not in self.config["input"]["config"]:
-                    raise ValueError(f"Key not present in the config: {key}")
-
-        elif self.config["input"]["data_type"] == "local":
-            if "source_path" not in self.config["input"]["config"]:
-                raise ValueError("Key not present in the config: source_path")
-            else:
-                # Check if local_directory is absolute path. If not, then set it.
-                local_directory = self.config["input_data"]["config"]["source_path"]
-                if isinstance(local_directory, list):
-                    local_directory = [
-                        self._get_absolute_path(local_path)
-                        for local_path in local_directory]
-                    for local_path in local_directory:
-                        if not os.path.exists(local_path):
-                            raise ValueError(f"Path does not exist: {local_path}")
-                else:
-                    local_directory = self._get_absolute_path(local_directory)
-                    if not os.path.exists(local_directory):
-                        raise ValueError(f"Path does not exist: {local_directory}")
-                self.config["input_data"]["local_directory"] = local_directory
-
-            # Raise error if data_format it not valid input formats
-            if self.config["input_data"]["data_format"] not in self.valid_input_formats:
-                raise ValueError("Invalid value for key in input_data: data_format")
-
-        elif self.config["input"]["data_type"] == "mock":
-            self._update_mock_data()
-
-        else:
-            raise ValueError("Invalid value for the key: data_location")
-
-    def _validate_configurations(self) -> None:
-        """
-        Validates the configurations config
-        """
-
-        if "configurations" not in self.config:
-            self.config["configurations"] = {}
-
-        valid_df_types = ["pandas", "spark"]
-
-        if "df_type" not in self.config["configurations"]:
-            self.config["configurations"]["df_type"] = "pandas"
-        elif self.config["configurations"]["df_type"] not in valid_df_types:
-            raise ValueError("Invalid value for the key: df_type")
-
-    def _validate_features(self) -> None:
-        """
-        Validates the features config
-        """
-
-        if len(self.config["features"]) == 0:
-            raise ValueError("features array cannot be empty")
-
-        for index, feature in enumerate(self.config["features"]):
-            if "location" not in feature:
-                raise ValueError(
-                    f"Key not present in the config: location at index {index}"
-                )
-
-            if "feature_groups" not in feature:
-                raise ValueError(
-                    f"Key not present in the config: feature_groups at index {index}"
-                )
-
-            if len(feature["feature_groups"]) == 0:
-                raise ValueError(
-                    f"feature_groups array cannot be empty at index {index}"
-                )
-            if "feature_names" not in feature:
-                raise ValueError(
-                    f"Key not present in the config: feature_groups at index {index}"
-                )
-
-            if len(feature["feature_names"]) == 0:
-                raise ValueError(
-                    f"feature_groups array cannot be empty at index {index}"
-                )
-            feature_location = feature["location"]
-
-            if utils.is_valid_github_path(feature_location):
-                repo_name = utils.get_repo_name_from_url(feature_location)
-                cache_dir = os.path.join(
-                    os.path.expanduser("~"), ".cache", "radarpipeline", repo_name
-                )
-
-                if not os.path.exists(cache_dir):
-                    Repo.clone_from(feature_location, cache_dir)
-
-                repo = Repo(cache_dir)
-                repo.git.reset("--hard")
-                repo.git.clean("-xdf")
-
-                active_branch_name = repo.active_branch.name
-                feature_branch = feature.get("branch", active_branch_name)
-
-                try:
-                    repo.git.checkout(feature_branch)
-                except GitCommandError:
-                    logger.warning(
-                        "Branch %s does not exist. Using the %s branch instead.",
-                        feature_branch,
-                        repo.active_branch.name,
-                    )
-                    feature_branch = repo.active_branch.name
-                    repo.git.checkout(feature_branch)
-                repo.remotes.origin.pull(feature_branch)
-
-                feature_location = cache_dir
-                logger.info(f"Using feature from cache location: {feature_location}")
-            else:
-                feature_location = os.path.expanduser(feature_location)
-                if not os.path.isdir(feature_location):
-                    raise ValueError(f"Invalid feature location: {feature_location}")
-                logger.info(f"Using feature from local path: {feature_location}")
-
-            self.config["features"][index]["location"] = feature_location
-
-    def _validate_output(self) -> None:
-        """
-        Validates the output data config
-        """
-
-        if self.config["output"]["output_location"] == "postgres":
-            postgres_config_keys = [
-                "postgres_host",
-                "postgres_username",
-                "postgres_database",
-                "postgres_password",
-                "postgres_table",
-            ]
-            for key in postgres_config_keys:
-                if key not in self.config["output"]['config']:
-                    raise ValueError(f"Key not present in the config: {key}")
-
-        elif self.config["output"]["output_location"] == "local":
-            if "target_path" not in self.config["output"]['config']:
-                raise ValueError("Key not present in the config: target_path")
-            else:
-                # Check if local_directory is absolute path. If not, then set it.
-                local_directory = self.config["output"]['config']["target_path"]
-                local_directory = self._get_absolute_path(local_directory)
-                if not os.path.exists(local_directory):
-                    os.makedirs(local_directory, exist_ok=True)
-                self.config["output"]['config']["target_path"] = local_directory
-
-            # Raise error if data_format it not valid output formats
-            if (
-                self.config["output"]["data_format"]
-                not in self.valid_output_formats
-            ):
-                raise ValueError("Invalid value for key in output: data_format")
-
-            if "compress" not in self.config["output"]:
-                self.config["output"]["compress"] = False
-            if self.config["output"]["compress"] == "true":
-                self.config["output"]["compress"] = True
-        else:
-            raise ValueError("Key not present in the config: output_location")
-
-    def _get_absolute_path(self, path: str) -> str:
-        """
-        Returns the absolute path of the path
-
-        Parameters
-        ----------
-        path: str
-            Path to be converted to absolute path
-
-        Returns
-        -------
-        str
-            Absolute path of the path
-        """
-
-        if not os.path.isabs(path):
-            pipeline_dir = pathlib.Path(__file__).parent.parent.parent.resolve()
-            path = os.path.join(pipeline_dir, path)
-        return path
-
-    def _update_mock_data(self) -> None:
-        """
-        Updates the mock data submodule of the project
-        """
-
-        repo = Repo(
-            os.path.dirname(os.path.abspath(__file__)),
-            search_parent_directories=True,
-        )
-        sms = repo.submodules
-        try:
-            mock_data_submodule = sms["mockdata"]
-        except IndexError:
-            raise ValueError("mockdata submodule not found in the repository")
-        if not (mock_data_submodule.exists() and mock_data_submodule.module_exists()):
-            logger.info("Mock data submodule not found. Cloning it...")
-            repo.git.submodule("update", "--init", "--recursive")
-            logger.info("Mock data input cloned")
 
     def _get_feature_groups(self) -> List[FeatureGroup]:
         """
@@ -470,22 +242,19 @@ class Project:
         elif self.config["input"]["data_type"] == "sftp":
             sftp_data_reader = SftpDataReader(self.config["input"]["config"], self.total_required_data)
             root_dir = sftp_data_reader.get_root_dir()
+            logger.info("Reading data from sftp")
             sftp_data_reader.read_sftp_data()
-            # Logging mentioned that the data is read from sftp
-            # and stored in the temp folder
-            # Next time to avoid redownloading, change config file
-            # to read from local
             sftp_local_config = {
                 "config": {
                     "source_path": root_dir
                 }
             }
             self.data = SparkCSVDataReader(
-                    sftp_local_config,
-                    self.total_required_data,
-                    self.config["configurations"]["df_type"],
-                    self.config['spark_config']
-                ).read_data()
+                sftp_local_config,
+                self.total_required_data,
+                self.config["configurations"]["df_type"],
+                self.config['spark_config']
+            ).read_data()
         else:
             raise ValueError("Wrong data location")
 

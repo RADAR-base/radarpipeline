@@ -7,10 +7,11 @@ input:
     data_type: mock # couldbe mock, local, sftp, s3
     config:
         # In case of sftp, use the following format
-        #        host:
-        #        source_path:
-        #        username:
-        #        private_key:
+        #sftp_host:
+        #sftp_source_path:
+        #sftp_username:
+        #sftp_private_key:
+        #sftp_target_path:
         # In case of s3, use the following format
         #       aws_access_key_id:
         #       aws_secret_access_key:
@@ -18,6 +19,7 @@ input:
         #       s3_access_url:
         #       bucket:
         #       prefix:
+        # In case of local or Mock, use the following format
         source_path: mockdata/mockdata
     data_format: csv
 
