@@ -16,5 +16,3 @@ pyspark-test==0.2.0
 pytest-cov
 pytest-mock
 PyGithub
-pygithub
-pygithub3
