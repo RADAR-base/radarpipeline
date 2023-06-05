@@ -11,7 +11,6 @@ from radarpipeline.common import constants
 from radarpipeline.datalib import RadarData, RadarUserData, RadarVariableData
 from radarpipeline.io.abc import DataReader, SchemaReader
 
-import pysftp
 from multiprocessing import Pool
 from functools import partial
 from datetime import datetime

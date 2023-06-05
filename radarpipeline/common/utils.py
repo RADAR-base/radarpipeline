@@ -11,6 +11,9 @@ import yaml
 from strictyaml import load, Map, Int, Str, Seq, Bool, Optional
 from strictyaml import YAMLError, CommaSeparated, MapPattern
 
+import ntpath
+import posixpath
+
 from radarpipeline.common import constants
 
 
@@ -190,3 +193,21 @@ def get_absolute_path(path: str) -> str:
         pipeline_dir = pathlib.Path(__file__).parent.parent.parent.resolve()
         path = os.path.join(pipeline_dir, path)
     return path
+
+
+def reparent(newparent, oldpath):
+    '''when copying or moving a directory structure, you need to re-parent the
+    oldpath.  When using os.path.join to calculate this new path, the
+    appearance of a / root path at the beginning of oldpath, supplants the
+    newparent and we don't want this to happen, so we need to make the oldpath
+    root appear as a child of the newparent.
+
+    :param: str newparent: the new parent location for oldpath (target)
+    :param str oldpath: the path being adopted by newparent (source)
+
+    :returns: (str) resulting adoptive path
+    '''
+
+    if oldpath[0] in (posixpath.sep, ntpath.sep):
+        oldpath = '.' + oldpath
+    return os.path.join(newparent, oldpath)
