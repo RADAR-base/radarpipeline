@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional, Union
 import json
 import logging
 import os
-from radarpipeline.common.utils import reparent, known_hosts
+from radarpipeline.common.utils import reparent
 
 from contextlib import contextmanager
 from stat import S_IMODE, S_ISDIR, S_ISREG
