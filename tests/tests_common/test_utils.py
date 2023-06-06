@@ -4,6 +4,7 @@ import unittest
 import os
 from radarpipeline.common.utils import is_valid_github_path, read_yaml
 from radarpipeline.common import utils
+from strictyaml.exceptions import YAMLValidationError
 
 RADAR_PIPELINE_URL = "https://github.com/RADAR-base/radarpipeline"
 WRONG_GITHUB_URL = "https://githuib.com/RADAR-base/radarpipeline"
@@ -73,6 +74,10 @@ class TestReadYaml(unittest.TestCase):
 
     def setUp(self):
         self.TESTDATA_FILENAME = "config.yaml"
+        self.TESTDATA_FILENAME_SPARK = "tests/resources/test_yamls/\
+            config_with_spark.yaml"
+        self.TESTDATA_FILENAME_INCORRECT_SPARK = "tests/resources/test_yamls/\
+            config_with_incorrect_spark.yaml"
         self.TESTDATA_FILENAME_WRONG = "tests/resources/config.yaml"
         self.TESTDATA_FILENAME_EMPTY = "tests/resources/test_config.yaml"
 
@@ -106,3 +111,41 @@ class TestReadYaml(unittest.TestCase):
         with self.assertRaises(ValueError):
             read_yaml(self.TESTDATA_FILENAME_WRONG)
             read_yaml(self.TESTDATA_FILENAME_EMPTY)
+
+    def test_read_yaml_with_spark_config(self):
+        config = read_yaml(self.TESTDATA_FILENAME_SPARK)
+        print(config)
+        expected_config = {
+            'project': {
+                'project_name': 'mock_project',
+                'description': 'mock_description',
+                'version': 'mock_version'},
+            'input': {
+                'data_type': 'mock',
+                'config': {'source_path': 'mockdata/mockdata'},
+                'data_format': 'csv'
+            },
+            'configurations': {'df_type': 'pandas'},
+            'features': [{
+                'location': 'https://github.com/RADAR-base-Analytics/mockfeatures',
+                'branch': 'main',
+                'feature_groups': ['MockFeatureGroup'],
+                'feature_names': [['all']]}],
+            'output': {
+                'output_location': 'local',
+                'config': {'target_path': 'output/mockdata'},
+                'data_format': 'csv',
+                'compress': False},
+            'spark_config': {
+                "spark.executor.instances": 2,
+                "spark.memory.offHeap.enabled": False,
+                "spark.executor.cores": 4,
+                "spark.executor.memory": "10g",
+                "spark.driver.memory": "15g",
+                "spark.memory.offHeap.size": "20g",
+                "spark.driver.maxResultSize": "0"}}
+        self.assertDictEqual(config, expected_config)
+
+    def test_read_yaml_with_incorrect_spark_config(self):
+        with self.assertRaises(YAMLValidationError):
+            read_yaml(self.TESTDATA_FILENAME_INCORRECT_SPARK)

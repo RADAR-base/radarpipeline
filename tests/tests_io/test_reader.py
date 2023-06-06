@@ -1,6 +1,7 @@
 import unittest
 from radarpipeline.io import SparkCSVDataReader, AvroSchemaReader
 import pandas as pd
+import radarpipeline
 from radarpipeline.datalib import RadarVariableData, RadarUserData, RadarData
 from pandas.testing import assert_frame_equal
 from numpy.testing import assert_array_equal
@@ -30,3 +31,30 @@ class TestSparkCSVDataReader(unittest.TestCase):
                                    RadarUserData))
         self.assertTrue(isinstance(spark_data.get_data()["test_participant"].get_data()
                                    ["android_phone_step_count"], RadarVariableData))
+
+
+class TestSparkCustomConfig(unittest.TestCase):
+    def setUp(self):
+        mock_config = {"config": {"source_path": "tests/resources/test_data/"}}
+        self.spark_config = {
+            "spark.executor.instances": 2,
+            "spark.memory.offHeap.enabled": False,
+            "spark.executor.cores": 4,
+            "spark.executor.memory": "10g",
+            "spark.driver.memory": "15g",
+            "spark.memory.offHeap.size": "20g",
+            "spark.driver.maxResultSize": "0"}
+        data_list = ['android_phone_step_count']
+        self.sparkcsvdatareader = SparkCSVDataReader(mock_config,
+                                                     required_data=data_list,
+                                                     spark_config=self.spark_config)
+
+    def test_spark_config(self):
+        spark_config_output = dict(
+            self.sparkcsvdatareader.spark.sparkContext.getConf().getAll())
+        for key, value in self.spark_config.items():
+            self.assertEqual(spark_config_output[key], str(value))
+
+    def test_spark_config_dict(self):
+        spark_config_output = self.sparkcsvdatareader.spark_config
+        self.assertDictEqual(self.spark_config, spark_config_output)

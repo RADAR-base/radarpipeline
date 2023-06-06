@@ -105,7 +105,6 @@ class SparkCSVDataReader(DataReader):
 
         spark.sparkContext.setLogLevel("ERROR")
         logger.info("Spark Session created")
-
         return spark
 
     def read_data(self) -> RadarData:
