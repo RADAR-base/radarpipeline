@@ -5,8 +5,6 @@ import traceback
 from radarpipeline import Project
 from radarpipeline.common.logger import logger_init
 
-import pygithub3
-
 logger_init()
 
 logger = logging.getLogger(__name__)
@@ -38,6 +36,7 @@ def run(config_path: str = "config.yaml"):
 
 
 def _gather_clone_urls(organization, no_forks=True):
+    """
     gh = pygithub3.Github()
     all_repos = gh.repos.list(user=organization).all()
     for repo in all_repos:
@@ -47,6 +46,8 @@ def _gather_clone_urls(organization, no_forks=True):
             continue
 
         yield repo.clone_url
+    TODO: implement this function
+    """
 
 
 def show_available_pipelines():
@@ -54,11 +55,13 @@ def show_available_pipelines():
     Uses git to show the available pipelines from
     https://github.com/RADAR-base-Analytics/
     """
+    """
     # Still in progress. not working yet
     clone_urls = _gather_clone_urls("RADAR-base-Analytics")
     print(clone_urls)
     return clone_urls
     # read all the repos from https://github.com/RADAR-base-Analytics/
+    """
 
 
 if __name__ == "__main__":
