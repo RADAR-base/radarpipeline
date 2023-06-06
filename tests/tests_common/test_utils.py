@@ -73,11 +73,11 @@ def test_combine_pyspark_dfs():
 class TestReadYaml(unittest.TestCase):
 
     def setUp(self):
-        self.TESTDATA_FILENAME = "config.yaml"
-        self.TESTDATA_FILENAME_SPARK = "tests/resources/test_yamls/\
-            config_with_spark.yaml"
-        self.TESTDATA_FILENAME_INCORRECT_SPARK = "tests/resources/test_yamls/\
-            config_with_incorrect_spark.yaml"
+        self.TESTDATA_FILENAME = "tests/resources/test_yamls/test_config.yaml"
+        self.TESTDATA_FILENAME_SPARK = "tests/resources/test_yamls/"\
+            "config_with_spark.yaml"
+        self.TESTDATA_FILENAME_INCORRECT_SPARK = "tests/resources/test_yamls/"\
+            "config_with_incorrect_spark.yaml"
         self.TESTDATA_FILENAME_WRONG = "tests/resources/config.yaml"
         self.TESTDATA_FILENAME_EMPTY = "tests/resources/test_config.yaml"
 
