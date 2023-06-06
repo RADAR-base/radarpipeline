@@ -25,7 +25,7 @@ class TestIntegration(unittest.TestCase):
         self.assertFalse(raised, 'Exception raised')
         project = Project(input_data="config.yaml")
         # Assert if output files are created
-        self.output_dir = project.config['output_data']['local_directory']
+        self.output_dir = project.config['output']["config"]['target_path']
         path = pl.Path(os.path.join(self.output_dir,
                                     "phone_battery_charging_duration.csv"))
         self.assertIsFile(path)

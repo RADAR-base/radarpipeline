@@ -51,7 +51,7 @@ class TestProject(unittest.TestCase):
         self.project.fetch_data()
         self.project.compute_features()
         self.project.export_data()
-        self.output_dir = self.project.config['output_data']['local_directory']
+        self.output_dir = self.project.config['output']['config']['target_path']
         path = pl.Path(os.path.join(self.output_dir,
                                     "phone_battery_charging_duration.csv"))
         self.assertIsFile(path)

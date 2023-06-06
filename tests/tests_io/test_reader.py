@@ -8,7 +8,7 @@ from numpy.testing import assert_array_equal
 
 class TestSparkCSVDataReader(unittest.TestCase):
     def setUp(self):
-        mock_config = {"local_directory": "tests/resources/test_data/"}
+        mock_config = {"config": {"source_path": "tests/resources/test_data/"}}
         data_list = ['android_phone_step_count']
         self.sparkcsvdatareader = SparkCSVDataReader(mock_config,
                                                      required_data=data_list)

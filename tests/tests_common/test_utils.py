@@ -78,24 +78,26 @@ class TestReadYaml(unittest.TestCase):
 
     def test_read_correct_yaml(self):
         config = read_yaml(self.TESTDATA_FILENAME)
+        print(config)
         expected_config = {
             'project': {
                 'project_name': 'mock_project',
                 'description': 'mock_description',
                 'version': 'mock_version'},
-            'input_data': {
-                'data_location': 'local',
-                'local_directory': 'mockdata/mockdata',
-                'data_format': 'csv'},
+            'input': {
+                'data_type': 'mock',
+                'config': {'source_path': 'mockdata/mockdata'},
+                'data_format': 'csv'
+            },
             'configurations': {'df_type': 'pandas'},
             'features': [{
                 'location': 'https://github.com/RADAR-base-Analytics/mockfeatures',
                 'branch': 'main',
                 'feature_groups': ['MockFeatureGroup'],
                 'feature_names': [['all']]}],
-            'output_data': {
+            'output': {
                 'output_location': 'local',
-                'local_directory': 'output/mockdata',
+                'config': {'target_path': 'output/mockdata'},
                 'data_format': 'csv',
                 'compress': False}}
         self.assertDictEqual(config, expected_config)

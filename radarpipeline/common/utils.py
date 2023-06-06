@@ -44,6 +44,7 @@ def read_yaml(yaml_file_path: str) -> Dict[str, Any]:
     if os.stat(yaml_file_path).st_size == 0:
         raise ValueError("Input file is empty")
     schema = get_yaml_schema()
+    print(schema)
     with open(yaml_file_path, "r", encoding=constants.ENCODING) as file:
         config = load(file.read(), schema).data
     return config
