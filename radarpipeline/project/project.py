@@ -220,12 +220,14 @@ class Project:
 
         if self.config["input"]["data_type"] == "local":
             if self.config["input"]["data_format"] in self.valid_input_formats:
-                self.data = SparkCSVDataReader(
+                sparkcsvdatareader = SparkCSVDataReader(
                     self.config["input"],
                     self.total_required_data,
                     self.config["configurations"]["df_type"],
                     self.config['spark_config']
-                ).read_data()
+                )
+                self.data = sparkcsvdatareader.read_data()
+                sparkcsvdatareader.close_spark_session()
             else:
                 raise ValueError("Wrong data format")
 
@@ -235,10 +237,12 @@ class Project:
                     "source_path": os.path.join("mockdata", "mockdata")
                 }
             }
-            self.data = SparkCSVDataReader(
+            sparkcsvdatareader = SparkCSVDataReader(
                 mock_config_input, self.total_required_data,
                 spark_config=self.config['spark_config']
-            ).read_data()
+            )
+            self.data = sparkcsvdatareader.read_data()
+            sparkcsvdatareader.close_spark_session()
 
         elif self.config["input"]["data_type"] == "sftp":
             sftp_data_reader = SftpDataReader(self.config["input"]["config"],
@@ -251,12 +255,14 @@ class Project:
                     "source_path": root_dir
                 }
             }
-            self.data = SparkCSVDataReader(
+            sparkcsvdatareader = SparkCSVDataReader(
                 sftp_local_config,
                 self.total_required_data,
                 self.config["configurations"]["df_type"],
                 self.config['spark_config']
             ).read_data()
+            self.data = sparkcsvdatareader.read_data()
+            sparkcsvdatareader.close_spark_session()
         else:
             raise ValueError("Wrong data location")
 

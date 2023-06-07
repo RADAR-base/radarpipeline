@@ -107,6 +107,9 @@ class SparkCSVDataReader(DataReader):
         logger.info("Spark Session created")
         return spark
 
+    def close_spark_session(self):
+        self.spark.stop()
+
     def read_data(self) -> RadarData:
         """
         Reads RADAR data from local CSV files
