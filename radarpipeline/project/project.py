@@ -58,10 +58,13 @@ class Project:
             elif utils.is_valid_github_path(input_data):
                 # get config.yaml from github
                 try:
-                    Repo.clone_from(input_data, "temp")
-                    input_data = os.path.join("/tmp", "config.yaml")
-                    # delete directory /tmp/config.yaml
-                    os.remove(input_data)
+                    repo_name = utils.get_repo_name_from_url(input_data)
+                    cache_dir = os.path.join(
+                        os.path.expanduser("~"), ".cache", "radarpipeline", repo_name
+                    )
+                    if not os.path.exists(cache_dir):
+                        Repo.clone_from(input_data, cache_dir)
+                    input_data = os.path.join(cache_dir, "config.yaml")
                     return input_data
                 except GitCommandError as err:
                     logger.error(f"Error while cloning the repo: {err}")
