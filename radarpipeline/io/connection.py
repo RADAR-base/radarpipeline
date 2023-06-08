@@ -71,7 +71,7 @@ class SftpConnector():
         username = self.config_dict.get('sftp_username')
         host = self.config_dict.get('sftp_host')
         password = self.config_dict.get('sftp_password')
-        port = 22
+        port = self.config_dict.get('sftp_port', 22)
         private_key = self.config_dict.get('sftp_private_key')
         self._tconnect = {'username': username, 'password': password, 'hostkey': None,
                           'pkey': None}

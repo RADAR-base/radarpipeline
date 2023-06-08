@@ -66,9 +66,9 @@ class TestProject(unittest.TestCase):
         path.unlink()
 
     def test_get_total_required_data(self):
-        required_data_output  = self.project._get_total_required_data()
+        required_data_output = self.project._get_total_required_data()
         expected_data = ['android_phone_battery_level', 'android_phone_step_count']
-        self.assertListEqual(required_data_output, expected_data)
+        self.assertListEqual(sorted(required_data_output), sorted(expected_data))
 
     def tearDown(self) -> None:
         del self.project
@@ -77,7 +77,8 @@ class TestProject(unittest.TestCase):
 class TestProjectRemoteLink(unittest.TestCase):
     def setUp(self):
         self.remotelink = "https://github.com/RADAR-base-Analytics/mockfeatures"
-        self.remotelink_raw = "https://raw.githubusercontent.com/RADAR-base-Analytics/mockfeatures/main/config.yaml"
+        self.remotelink_raw = "https://raw.githubusercontent.com/"\
+            "RADAR-base-Analytics/mockfeatures/main/config.yaml"
         response = requests.get(self.remotelink_raw , allow_redirects=True)
         content = response.content.decode("utf-8")
         self.expected_config = yaml.safe_load(content)
