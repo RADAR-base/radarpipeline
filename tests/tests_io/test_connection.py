@@ -66,7 +66,7 @@ class TestConnection(unittest.TestCase):
                  ('pub', 'foo1', 'foo1.txt'),
                  ('pub', 'foo2', 'foo2.txt'),
                  ('pub', 'foo2', 'bar1', 'bar1.txt')]
-    TEST_PATH_DIR = "tests/resources/sftp_test"
+    TEST_PATH_DIR = "./tests/resources/sftp_test"
     STARS8192 = '*' * 8192
 
     @pytest.fixture(autouse=True)
@@ -95,11 +95,17 @@ class TestConnection(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        # create TEST_PATH_DIR if it does not exist
+        if not os.path.exists(TEST_PATH_DIR):
+            os.mkdir(TEST_PATH_DIR)
         cls.build_dir_struct(cls, TEST_PATH_DIR)
 
     @classmethod
     def tearDownClass(cls):
         cls.remove_dir_struct(cls, TEST_PATH_DIR)
+        # Delete TEST_PATH_DIR if it is empty
+        if not os.listdir(TEST_PATH_DIR):
+            os.rmdir(TEST_PATH_DIR)
 
     def setUp(self):
         self.sftp = SftpConnector(conn(self.sftpserver), ['x'])
