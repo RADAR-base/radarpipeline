@@ -42,7 +42,7 @@ def conn(sftpsrv):
     """return a dictionary holding argument info for the pysftp client"""
     return {'sftp_host': sftpsrv.host, 'sftp_port': sftpsrv.port,
             'sftp_username': 'user',
-            'sftp_password': 'pw', 'default_path': '/home/test'}
+            'sftp_password': 'pw', 'sftp_source_path': '/home/test'}
 
 
 @pytest.yield_fixture(scope="session")

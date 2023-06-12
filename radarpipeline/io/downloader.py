@@ -122,6 +122,9 @@ class SftpDataReader():
     def _get_all_id_sftp(self, sftp_source_path):
         sftp = SftpConnector(self.config_dict, self.variables)
         sftp.connect()
+        print(sftp.listdir())
         with sftp.cd(sftp_source_path + '/'):
-            return [x for x in sftp.listdir(sftp_source_path) if x[0] != "."]
+            print(sftp.listdir())
+            ids = [x for x in sftp.listdir() if x[0] != "."]
         sftp.close()
+        return ids
