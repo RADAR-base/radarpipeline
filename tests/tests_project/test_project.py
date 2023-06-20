@@ -3,6 +3,11 @@ from radarpipeline.project import Project
 from strictyaml.exceptions import YAMLValidationError
 import pathlib as pl
 import os
+from strictyaml import as_document
+from radarpipeline.common import utils
+
+import requests
+import yaml
 
 
 class TestProjectInit(unittest.TestCase):
@@ -31,7 +36,7 @@ class TestProject(unittest.TestCase):
     Test running mock project
     '''
     def setUp(self):
-        config_path = 'config.yaml'
+        config_path = "tests/resources/test_yamls/test_config.yaml"
         self.project = Project(config_path)
 
     def assertIsFile(self, path):
@@ -51,7 +56,7 @@ class TestProject(unittest.TestCase):
         self.project.fetch_data()
         self.project.compute_features()
         self.project.export_data()
-        self.output_dir = self.project.config['output_data']['local_directory']
+        self.output_dir = self.project.config['output']['config']['target_path']
         path = pl.Path(os.path.join(self.output_dir,
                                     "phone_battery_charging_duration.csv"))
         self.assertIsFile(path)
@@ -60,5 +65,36 @@ class TestProject(unittest.TestCase):
         self.assertIsFile(path)
         path.unlink()
 
+    def test_get_total_required_data(self):
+        required_data_output = self.project._get_total_required_data()
+        expected_data = ['android_phone_battery_level', 'android_phone_step_count']
+        self.assertListEqual(sorted(required_data_output), sorted(expected_data))
+
     def tearDown(self) -> None:
         del self.project
+
+
+class TestProjectRemoteLink(unittest.TestCase):
+    def setUp(self):
+        self.remotelink = "https://github.com/RADAR-base-Analytics/mockfeatures"
+        self.remotelink_raw = "https://raw.githubusercontent.com/"\
+            "RADAR-base-Analytics/mockfeatures/main/config.yaml"
+        response = requests.get(self.remotelink_raw , allow_redirects=True)
+        content = response.content.decode("utf-8")
+        self.expected_config = yaml.safe_load(content)
+
+    def test_resolve_remote_link(self):
+        project = Project(self.remotelink)
+        project_config_file = project._resolve_input_data(self.remotelink)
+        project_config = yaml.safe_load(open(project_config_file, 'r'))
+        # Assert that config file is as same as it is in the remote link
+        self.assertDictEqual(project_config, self.expected_config)
+
+    def test_get_config(self):
+        project = Project(self.remotelink)
+        project_config = project._get_config()
+        schema = utils.get_yaml_schema()
+        print(project_config)
+        print(self.expected_config)
+        expected_config_updated = as_document(self.expected_config, schema).data
+        self.assertDictEqual(project_config, expected_config_updated)

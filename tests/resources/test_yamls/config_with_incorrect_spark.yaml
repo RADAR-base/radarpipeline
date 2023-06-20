@@ -29,6 +29,10 @@ configurations:
 features:
     - location: 'https://github.com/RADAR-base-Analytics/mockfeatures'
       branch: main
+      feature_groups:
+          - MockFeatureGroup
+      feature_names:
+        - all
 
 output:
     output_location: local # can be local, postgres, sftp
@@ -36,3 +40,6 @@ output:
         target_path: output/mockdata
     data_format: csv
     compress: false
+
+spark_config:
+    spark.memory.offHeapSize: false

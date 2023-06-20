@@ -11,6 +11,10 @@ from radarpipeline.common import constants
 from radarpipeline.datalib import RadarData, RadarUserData, RadarVariableData
 from radarpipeline.io.abc import DataReader, SchemaReader
 
+from multiprocessing import Pool
+from functools import partial
+from datetime import datetime
+
 logger = logging.getLogger(__name__)
 
 
@@ -19,11 +23,23 @@ class SparkCSVDataReader(DataReader):
     Read CSV data from local directory using pySpark
     """
 
-    def __init__(self, config: Dict, required_data: List[str], df_type: str = "pandas"):
+    def __init__(self, config: Dict, required_data: List[str], df_type: str = "pandas",
+                 spark_config: Dict = {}):
         super().__init__(config)
+        default_spark_config = {'spark.executor.instances': 6,
+                                'spark.driver.memory': '10G',
+                                'spark.executor.cores': 4,
+                                'spark.executor.memory': '10g',
+                                'spark.memory.offHeap.enabled': True,
+                                'spark.memory.offHeap.size': '20g',
+                                'spark.driver.maxResultSize': '0'}
+
         self.required_data = required_data
         self.df_type = df_type
-        self.source_path = self.config.get("local_directory", "")
+        self.source_path = self.config['config'].get("source_path", "")
+        self.spark_config = default_spark_config
+        if spark_config is not None:
+            self.spark_config.update(spark_config)
         self.spark = self._initialize_spark_session()
 
     def _initialize_spark_session(self) -> ps.SparkSession:
@@ -63,13 +79,20 @@ class SparkCSVDataReader(DataReader):
         """
         spark = (
             SparkSession.builder.master("local").appName("radarpipeline")
-            .config('spark.executor.instances', 4)
-            .config('spark.executor.cores', 4)
-            .config('spark.executor.memory', '10g')
-            .config('spark.driver.memory', '15g')
-            .config('spark.memory.offHeap.enabled', True)
-            .config('spark.memory.offHeap.size', '20g')
-            .config('spark.driver.maxResultSize', '0')
+            .config('spark.executor.instances',
+                    self.spark_config['spark.executor.instances'])
+            .config('spark.executor.cores',
+                    self.spark_config['spark.executor.cores'])
+            .config('spark.executor.memory',
+                    self.spark_config['spark.executor.memory'])
+            .config('spark.driver.memory',
+                    self.spark_config['spark.driver.memory'])
+            .config('spark.memory.offHeap.enabled',
+                    self.spark_config['spark.memory.offHeap.enabled'])
+            .config('spark.memory.offHeap.size',
+                    self.spark_config['spark.memory.offHeap.size'])
+            .config('spark.driver.maxResultSize',
+                    self.spark_config['spark.driver.maxResultSize'])
             .getOrCreate()
         )
 
@@ -82,8 +105,10 @@ class SparkCSVDataReader(DataReader):
 
         spark.sparkContext.setLogLevel("ERROR")
         logger.info("Spark Session created")
-
         return spark
+
+    def close_spark_session(self):
+        self.spark.stop()
 
     def read_data(self) -> RadarData:
         """
@@ -433,3 +458,46 @@ class AvroSchemaReader(SchemaReader):
                 f"Conflicting types: {spark_data_type_list}. Returning String type."
             )
             return constants.STRING_TYPE
+
+
+class Reader():
+    '''
+    Class for reading data from a file
+    Reader(data_type : str, data_path: str, variables: Union[str, List])
+    reader = Reader(...)
+    reader.get_data(variables=Union[List, str])
+    reader.get_user_data(user_id=..)
+    '''
+    def __init__(self, data_type: str, data_path: str, variables: Union[str, List]):
+        '''
+        Parameters : data_type : str, data_path: str, variables: Union[str, List]
+        data_type : str
+            Type of data to be read
+            Only supports csv for now
+        data_path : str
+            Path to the data directory
+        variables : Union[str, List]
+            List of variables to be read
+        '''
+        self.data_type = data_type
+        self.data_path = data_path
+        # check if variables is a str
+        # If so, convert it to a list
+        if isinstance(variables, str):
+            variables = [variables]
+        self.variables = variables
+        config_dict = {"local_directory": self.data_path}
+        # check if data_type is csv
+        if self.data_type == 'csv':
+            self.reader_class = SparkCSVDataReader(config_dict, self.variables)
+        else:
+            raise NotImplementedError("Only csv data type is supported for now")
+
+    def read_data(self):
+        self.data = self.reader_class.read_data()
+
+    def get_data(self, variables: Union[List, str]) -> RadarData:
+        return self.data.get_combined_data_by_variable(variables)
+
+    def get_user_data(self, user_id: str) -> RadarData:
+        return self.data.get_data_by_user_id(user_id)

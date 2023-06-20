@@ -140,5 +140,6 @@ data/
 features/
 temp/
 output/
+tmp/
 
 .DS_STORE

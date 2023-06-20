@@ -2,12 +2,17 @@ import os
 from functools import reduce
 from typing import Any, Dict, List
 from urllib.parse import urlparse
+import pathlib
 from pathlib import Path
 
 import pyspark.sql as ps
 import requests
 import yaml
-from strictyaml import load, Map, Str, Seq, Bool, Optional, YAMLError, CommaSeparated
+from strictyaml import load, Map, Int, Str, Seq, Bool, Optional
+from strictyaml import YAMLError, CommaSeparated, MapPattern
+
+import ntpath
+import posixpath
 
 from radarpipeline.common import constants
 
@@ -139,9 +144,9 @@ def get_yaml_schema() -> Map:
             Optional("description"): Str(),
             Optional("version"): Str()
         }),
-        "input_data": Map({
-            "data_location": Str(),
-            "local_directory": Seq(Str()) | Str(),
+        "input": Map({
+            "data_type": Str(),
+            "config": MapPattern(Str(), Str()),
             "data_format": Str()
         }),
         "configurations": Map({
@@ -153,11 +158,56 @@ def get_yaml_schema() -> Map:
             "feature_groups": Seq(Str()),
             "feature_names": Seq(CommaSeparated(Str()))
         })),
-        "output_data": Map({
+        "output": Map({
             "output_location": Str(),
-            "local_directory": Str(),
+            "config": MapPattern(Str(), Str()),
             "data_format": Str(),
             "compress": Bool()
-        })
+        }),
+        Optional("spark_config"): Map({
+            Optional("spark.executor.instances", default=4): Int(),
+            Optional("spark.executor.cores", default=4): Int(),
+            Optional("spark.executor.memory", default='10g'): Str(),
+            Optional("spark.driver.memory", default='15g'): Str(),
+            Optional("spark.memory.offHeap.enabled", default=True): Bool(),
+            Optional("spark.memory.offHeap.size", default='20g'): Str(),
+            Optional("spark.driver.maxResultSize", default='0'): Str(),
+        }),
     })
     return schema
+
+
+def get_absolute_path(path: str) -> str:
+    """
+    Returns the absolute path of the path
+    Parameters
+    ----------
+    path: str
+        Path to be converted to absolute path
+    Returns
+    -------
+    str
+        Absolute path of the path
+    """
+    if not os.path.isabs(path):
+        pipeline_dir = pathlib.Path(__file__).parent.parent.parent.resolve()
+        path = os.path.join(pipeline_dir, path)
+    return path
+
+
+def reparent(newparent, oldpath):
+    '''when copying or moving a directory structure, you need to re-parent the
+    oldpath.  When using os.path.join to calculate this new path, the
+    appearance of a / root path at the beginning of oldpath, supplants the
+    newparent and we don't want this to happen, so we need to make the oldpath
+    root appear as a child of the newparent.
+
+    :param: str newparent: the new parent location for oldpath (target)
+    :param str oldpath: the path being adopted by newparent (source)
+
+    :returns: (str) resulting adoptive path
+    '''
+
+    if oldpath[0] in (posixpath.sep, ntpath.sep):
+        oldpath = '.' + oldpath
+    return os.path.join(newparent, oldpath)
