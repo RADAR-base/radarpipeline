@@ -235,9 +235,15 @@ class Project:
                 raise ValueError("Wrong data format")
 
         elif self.config["input"]["data_type"] == "mock":
+            MOCK_URL = "https://github.com/RADAR-base-Analytics/mockdata"
+            cache_dir = os.path.join(
+                os.path.expanduser("~"), ".cache", "radarpipeline", "mockdata")
+            if not os.path.exists(cache_dir):
+                Repo.clone_from(MOCK_URL, cache_dir)
+            mock_data_directory = os.path.join(cache_dir, "mockdata")
             mock_config_input = {
                 "config": {
-                    "source_path": os.path.join("mockdata", "mockdata")
+                    "source_path": mock_data_directory
                 }
             }
             sparkcsvdatareader = SparkCSVDataReader(

@@ -25,6 +25,10 @@ Wiki resources:
 -   [Contributor Guide](https://github.com/RADAR-base/radarpipeline/wiki/Contributor-Guide)
 -   [Mock Pipeline](https://github.com/RADAR-base/radarpipeline/wiki/Mock-Pipeline)
 -   [Configuration](https://github.com/RADAR-base/radarpipeline/wiki/Configuration)
+-   [Data Ingestion](https://github.com/RADAR-base/radarpipeline/wiki/Data-Ingestion)
+-  [Setup](https://github.com/RADAR-base/radarpipeline/wiki/Setup)
+-  [Pipeline Core Topics](https://github.com/RADAR-base/radarpipeline/wiki/Pipeline-Core-Topics)
+- [Creating Citable Analytics Pipelines](https://github.com/RADAR-base/radarpipeline/wiki/Creating-Citable-Analytics-Pipelines)
 
 ## How to run
 
