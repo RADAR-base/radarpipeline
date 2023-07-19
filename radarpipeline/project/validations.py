@@ -36,19 +36,23 @@ class ConfigValidator():
         Updates the mock data submodule of the åproject
         """
 
-        repo = Repo(
-            os.path.dirname(os.path.abspath(__file__)),
-            search_parent_directories=True,
-        )
-        sms = repo.submodules
         try:
-            mock_data_submodule = sms["mockdata"]
+            MOCK_URL = "https://github.com/RADAR-base-Analytics/mockdata"
+            cache_dir = os.path.join(
+                os.path.expanduser("~"), ".cache", "radarpipeline", "mockdata")
+            if not os.path.exists(cache_dir):
+                logger.info("Mock data submodule not found. Cloning it...")
+                Repo.clone_from(MOCK_URL, cache_dir)
+                logger.info("Mock data input cloned")
+            else:
+                repo = Repo(
+                    cache_dir,
+                    search_parent_directories=True,
+                )
+                repo.remotes.origin.pull()
+
         except IndexError:
-            raise ValueError("mockdata submodule not found in the repository")
-        if not (mock_data_submodule.exists() and mock_data_submodule.module_exists()):
-            logger.info("Mock data submodule not found. Cloning it...")
-            repo.git.submodule("update", "--init", "--recursive")
-            logger.info("Mock data input cloned")
+            raise ValueError("mockdata submodule not found")
 
     def _validate_input(self) -> None:
         """
