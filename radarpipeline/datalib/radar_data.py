@@ -25,6 +25,9 @@ class RadarData(Data):
     def set_data(self, data: Dict[str, RadarUserData]) -> None:
         self._data = data
 
+    def get_data_type(self) -> str:
+        return self.df_type
+
     def get_data_keys(self) -> List[str]:
         return list(self._data.keys())
 
@@ -140,3 +143,10 @@ class RadarData(Data):
             return user_data_list[0]
         else:
             return user_data_list
+
+    def get_variable_data(
+            self, variables: Union[List, str]) -> Union[DataType, List[DataType]]:
+        return self.get_combined_data_by_variable(variables)
+
+    def get_user_data(self, user_id: str) -> Union[DataType, List[DataType]]:
+        return self.get_data_by_user_id(user_id)

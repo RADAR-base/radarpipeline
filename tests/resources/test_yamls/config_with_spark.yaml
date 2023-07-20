@@ -43,4 +43,4 @@ output:
 
 spark_config:
     spark.executor.instances: 2
-    spark.driver.memory: 13G
+    spark.memory.offHeap.enabled: false

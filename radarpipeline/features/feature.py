@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List
 
-from radarpipeline.datalib import RadarData
 from radarpipeline.datatypes.data_types import DataType
 
 

@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.DS_STORE
 
 # C extensions
 *.so
@@ -139,3 +140,6 @@ data/
 features/
 temp/
 output/
+tmp/
+
+.DS_STORE
