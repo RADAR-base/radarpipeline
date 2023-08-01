@@ -18,8 +18,8 @@ setup(
     readme="README.md",
     long_description=read_file('README.md'),
     long_description_content_type='text/markdown',
-    author="Heet Sankesara",
-    author_email="heet.sankesara@kcl.ac.uk",
+    author="Heet Sankesara, Amos Folarin",
+    author_email="heet.sankesara@kcl.ac.uk, amos.folarin@kcl.ac.uk",
     keywords=['mhealth', 'pipeline', 'big-data'],
     packages=find_packages(),
     install_requires=[
