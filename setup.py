@@ -28,7 +28,7 @@ setup(
         "numpy==1.22.3",
         "scipy==1.10.0",
         "pyspark[sql]==3.3.0",
-        "GitPython==3.1.30",
+        "GitPython>=3.1.32",
         "strictyaml==1.7.3",
         "paramiko==3.1.0"],
     test_suite="tests",
