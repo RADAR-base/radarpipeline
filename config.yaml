@@ -20,7 +20,7 @@ input:
         #       bucket:
         #       prefix:
         # In case of local or Mock, use the following format
-        source_path: ../../covid_collab_sample_data/data
+        source_path: mockdata/mockdata
     data_format: csv
 
 configurations:
