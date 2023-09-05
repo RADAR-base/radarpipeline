@@ -30,9 +30,11 @@ class SparkCSVDataReader(DataReader):
         super().__init__(config)
         self.source_formats = {
             # RADAR_OLD: uid/variable/yyyymmdd_hh00.csv.gz
-            "RADAR_OLD": r"^[a-zA-Z0-9-]+/([a-zA-Z\w]+)/([0-9\w]+.csv.gz|schema-\1.json)",
+            "RADAR_OLD": re.compile(r""""^[a-zA-Z0-9-]+/([a-zA-Z\w]+)/
+                                ([0-9\w]+.csv.gz|schema-\1.json)""", re.X),
             # RADAR_NEW: uid/variable/yyyymm/yyyymmdd.csv.gz
-            "RADAR_NEW": r"[a-zA-Z0-9-]+/([a-zA-Z\w]+)/[0-9]+/([0-9]+.csv.gz$|schema-\1.json$)",
+            "RADAR_NEW": re.compile(r"""[a-zA-Z0-9-]+/([a-zA-Z\w]+)/
+                                    [0-9]+/([0-9]+.csv.gz$|schema-\1.json$)""", re.X),
         }
         default_spark_config = {'spark.executor.instances': 6,
                                 'spark.driver.memory': '10G',
@@ -122,7 +124,8 @@ class SparkCSVDataReader(DataReader):
         """
         Returns the source type of the data
         """
-        files = [y for x in os.walk(source_path) for y in glob(os.path.join(x[0], '*.*'))]
+        files = [y for x in os.walk(source_path) for y in
+                 glob(os.path.join(x[0], '*.*'))]
         if source_path[-1] != "/":
             source_path = source_path + "/"
         for key, value in self.source_formats.items():
@@ -150,10 +153,12 @@ class SparkCSVDataReader(DataReader):
             source_type = self._get_source_type(source_path_item)
             if source_type == "RADAR_OLD":
                 logger.info("Reading data from old RADAR format")
-                radar_data, user_data_dict = self._read_data_from_old_format(source_path_item, user_data_dict)
+                radar_data, user_data_dict = self._read_data_from_old_format(
+                    source_path_item, user_data_dict)
             elif source_type == "RADAR_NEW":
                 logger.info("Reading data from new RADAR format")
-                radar_data, user_data_dict = self._read_data_from_new_format(source_path_item, user_data_dict)
+                radar_data, user_data_dict = self._read_data_from_new_format(
+                    source_path_item, user_data_dict)
         return radar_data
 
     def _read_variable_data_files(
@@ -273,6 +278,7 @@ class SparkCSVDataReader(DataReader):
             user_data_dict[uid] = RadarUserData(variable_data_dict, self.df_type)
         radar_data = RadarData(user_data_dict, self.df_type)
         return radar_data, user_data_dict
+
 
 class AvroSchemaReader(SchemaReader):
     """
