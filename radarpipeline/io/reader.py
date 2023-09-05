@@ -1,6 +1,8 @@
 import json
 import logging
 import os
+from glob import glob
+import re
 from typing import Any, Dict, List, Optional, Union
 
 import pyspark.sql as ps
@@ -26,6 +28,12 @@ class SparkCSVDataReader(DataReader):
     def __init__(self, config: Dict, required_data: List[str], df_type: str = "pandas",
                  spark_config: Dict = {}):
         super().__init__(config)
+        self.source_formats = {
+            # RADAR_OLD: uid/variable/yyyymmdd_hh00.csv.gz
+            "RADAR_OLD": r"^[a-zA-Z0-9-]+/([a-zA-Z\w]+)/([0-9\w]+.csv.gz|schema-\1.json)",
+            # RADAR_NEW: uid/variable/yyyymm/yyyymmdd.csv.gz
+            "RADAR_NEW": r"[a-zA-Z0-9-]+/([a-zA-Z\w]+)/[0-9]+/([0-9]+.csv.gz$|schema-\1.json$)",
+        }
         default_spark_config = {'spark.executor.instances': 6,
                                 'spark.driver.memory': '10G',
                                 'spark.executor.cores': 4,
@@ -110,6 +118,20 @@ class SparkCSVDataReader(DataReader):
     def close_spark_session(self):
         self.spark.stop()
 
+    def _get_source_type(self, source_path):
+        """
+        Returns the source type of the data
+        """
+        files = [y for x in os.walk(source_path) for y in glob(os.path.join(x[0], '*.*'))]
+        if source_path[-1] != "/":
+            source_path = source_path + "/"
+        for key, value in self.source_formats.items():
+            file = files[0]
+            file_format = file.replace(source_path, "")
+            if re.match(value, file_format):
+                return key
+        raise ValueError("Source type not recognized")
+
     def read_data(self) -> RadarData:
         """
         Reads RADAR data from local CSV files
@@ -125,36 +147,13 @@ class SparkCSVDataReader(DataReader):
         if not isinstance(self.source_path, list):
             self.source_path = [self.source_path]
         for source_path_item in self.source_path:
-            for uid in os.listdir(source_path_item):
-                # Skip hidden files
-                if uid[0] == ".":
-                    continue
-                logger.info(f"Reading data for user: {uid}")
-                variable_data_dict = {}
-                for dirname in self.required_data:
-                    if dirname not in os.listdir(os.path.join(source_path_item, uid)):
-                        continue
-                    logger.info(f"Reading data for variable: {dirname}")
-                    absolute_dirname = os.path.abspath(
-                        os.path.join(source_path_item, uid, dirname)
-                    )
-                    data_files = [
-                        os.path.join(absolute_dirname, f)
-                        for f in os.listdir(absolute_dirname)
-                        if f.endswith(".csv.gz")
-                    ]
-                    schema = None
-                    schema_reader = AvroSchemaReader(absolute_dirname)
-                    if schema_reader.is_schema_present():
-                        logger.info("Schema found")
-                        schema = schema_reader.get_schema()
-                    else:
-                        logger.info("Schema not found, inferring from data file")
-                    variable_data = self._read_variable_data_files(data_files, schema)
-                    if variable_data.get_data_size() > 0:
-                        variable_data_dict[dirname] = variable_data
-                user_data_dict[uid] = RadarUserData(variable_data_dict, self.df_type)
-        radar_data = RadarData(user_data_dict, self.df_type)
+            source_type = self._get_source_type(source_path_item)
+            if source_type == "RADAR_OLD":
+                logger.info("Reading data from old RADAR format")
+                radar_data, user_data_dict = self._read_data_from_old_format(source_path_item, user_data_dict)
+            elif source_type == "RADAR_NEW":
+                logger.info("Reading data from new RADAR format")
+                radar_data, user_data_dict = self._read_data_from_new_format(source_path_item, user_data_dict)
         return radar_data
 
     def _read_variable_data_files(
@@ -205,6 +204,72 @@ class SparkCSVDataReader(DataReader):
 
         return variable_data
 
+    def _read_data_from_old_format(self, source_path: str, user_data_dict: dict):
+        for uid in os.listdir(source_path):
+            # Skip hidden files
+            if uid[0] == ".":
+                continue
+            logger.info(f"Reading data for user: {uid}")
+            variable_data_dict = {}
+            for dirname in self.required_data:
+                if dirname not in os.listdir(os.path.join(source_path, uid)):
+                    continue
+                logger.info(f"Reading data for variable: {dirname}")
+                absolute_dirname = os.path.abspath(
+                    os.path.join(source_path, uid, dirname)
+                )
+                data_files = [
+                    os.path.join(absolute_dirname, f)
+                    for f in os.listdir(absolute_dirname)
+                    if f.endswith(".csv.gz")
+                ]
+                schema = None
+                schema_reader = AvroSchemaReader(absolute_dirname)
+                if schema_reader.is_schema_present():
+                    logger.info("Schema found")
+                    schema = schema_reader.get_schema()
+                else:
+                    logger.info("Schema not found, inferring from data file")
+                variable_data = self._read_variable_data_files(data_files, schema)
+                if variable_data.get_data_size() > 0:
+                    variable_data_dict[dirname] = variable_data
+            user_data_dict[uid] = RadarUserData(variable_data_dict, self.df_type)
+        radar_data = RadarData(user_data_dict, self.df_type)
+        return radar_data, user_data_dict
+
+    def _read_data_from_new_format(self, source_path: str, user_data_dict: dict):
+        # RADAR_NEW: uid/variable/yyyymm/yyyymmdd.csv.gz
+        for uid in os.listdir(source_path):
+            # Skip hidden files
+            if uid[0] == ".":
+                continue
+            logger.info(f"Reading data for user: {uid}")
+            variable_data_dict = {}
+            for dirname in self.required_data:
+                if dirname not in os.listdir(os.path.join(source_path, uid)):
+                    continue
+                logger.info(f"Reading data for variable: {dirname}")
+                for date in os.listdir(os.path.join(source_path, uid, dirname)):
+                    absolute_dirname = os.path.abspath(
+                        os.path.join(source_path, uid, dirname, date))
+                    data_files = [
+                        os.path.join(absolute_dirname, f)
+                        for f in os.listdir(absolute_dirname)
+                        if f.endswith(".csv.gz")
+                    ]
+                schema = None
+                schema_reader = AvroSchemaReader(absolute_dirname)
+                if schema_reader.is_schema_present():
+                    logger.info("Schema found")
+                    schema = schema_reader.get_schema()
+                else:
+                    logger.info("Schema not found, inferring from data file")
+                variable_data = self._read_variable_data_files(data_files, schema)
+                if variable_data.get_data_size() > 0:
+                    variable_data_dict[dirname] = variable_data
+            user_data_dict[uid] = RadarUserData(variable_data_dict, self.df_type)
+        radar_data = RadarData(user_data_dict, self.df_type)
+        return radar_data, user_data_dict
 
 class AvroSchemaReader(SchemaReader):
     """
@@ -228,11 +293,9 @@ class AvroSchemaReader(SchemaReader):
         self.schema_file = os.path.join(
             self.schema_dir, f"schema-{schema_dir_base}.json"
         )
-
         if os.path.exists(self.schema_file):
             self.schema_file = self.schema_file
             return True
-
         return False
 
     def get_schema(self) -> StructType:
