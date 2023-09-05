@@ -250,6 +250,9 @@ class SparkCSVDataReader(DataReader):
                     continue
                 logger.info(f"Reading data for variable: {dirname}")
                 for date in os.listdir(os.path.join(source_path, uid, dirname)):
+                    # Skip hidden files
+                    if date[0] == ".":
+                        continue
                     absolute_dirname = os.path.abspath(
                         os.path.join(source_path, uid, dirname, date))
                     data_files = [
