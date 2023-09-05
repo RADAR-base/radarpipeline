@@ -30,11 +30,11 @@ class SparkCSVDataReader(DataReader):
         super().__init__(config)
         self.source_formats = {
             # RADAR_OLD: uid/variable/yyyymmdd_hh00.csv.gz
-            "RADAR_OLD": re.compile(r""""^[a-zA-Z0-9-]+/([a-zA-Z\w]+)/
-                                ([0-9\w]+.csv.gz|schema-\1.json)""", re.X),
+            "RADAR_OLD": re.compile(r"""^[\w-]+/([\w]+)/
+                                ([\d_]+.csv.gz|schema-\1.json)""", re.X),
             # RADAR_NEW: uid/variable/yyyymm/yyyymmdd.csv.gz
-            "RADAR_NEW": re.compile(r"""[a-zA-Z0-9-]+/([a-zA-Z\w]+)/
-                                    [0-9]+/([0-9]+.csv.gz$|schema-\1.json$)""", re.X),
+            "RADAR_NEW": re.compile(r"""^[\w-]+/([\w]+)/
+                                    [\d]+/([\d]+.csv.gz$|schema-\1.json$)""", re.X),
         }
         default_spark_config = {'spark.executor.instances': 6,
                                 'spark.driver.memory': '10G',
