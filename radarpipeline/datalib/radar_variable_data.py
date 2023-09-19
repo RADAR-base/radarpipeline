@@ -8,6 +8,7 @@ from radarpipeline.datatypes import DataType
 
 logger = logging.getLogger(__name__)
 
+
 class RadarVariableData(Data):
     """
     Class for reading data for a single variable of a single user

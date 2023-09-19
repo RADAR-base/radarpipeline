@@ -247,5 +247,6 @@ def get_write_file_attr(feature_name, output_dir, data_format, compression):
         file_name = pascal_to_snake_case(feature_name) + ".pkl"
         file_path = os.path.join(output_dir, file_name)
     else:
-        raise ValueError(f"Invalid data format {data_format} specified for spark writer")
+        raise ValueError(f"Invalid data format {data_format} specified \
+            for spark writer")
     return file_path
