@@ -210,6 +210,7 @@ class SparkCSVDataReader(DataReader):
         return variable_data
 
     def _read_data_from_old_format(self, source_path: str, user_data_dict: dict):
+        schema_reader = AvroSchemaReader()
         for uid in os.listdir(source_path):
             # Skip hidden files
             if uid[0] == ".":
@@ -229,10 +230,11 @@ class SparkCSVDataReader(DataReader):
                     if f.endswith(".csv.gz")
                 ]
                 schema = None
-                schema_reader = AvroSchemaReader(absolute_dirname)
-                if schema_reader.is_schema_present():
+                schema_dir = absolute_dirname
+                schema_dir_base = schema_reader.get_schema_dir_base(schema_dir)
+                if schema_reader.is_schema_present(schema_dir, schema_dir_base):
                     logger.info("Schema found")
-                    schema = schema_reader.get_schema()
+                    schema = schema_reader.get_schema(schema_dir, schema_dir_base)
                 else:
                     logger.info("Schema not found, inferring from data file")
                 variable_data = self._read_variable_data_files(data_files, schema)
@@ -244,6 +246,7 @@ class SparkCSVDataReader(DataReader):
 
     def _read_data_from_new_format(self, source_path: str, user_data_dict: dict):
         # RADAR_NEW: uid/variable/yyyymm/yyyymmdd.csv.gz
+        schema_reader = AvroSchemaReader()
         for uid in os.listdir(source_path):
             # Skip hidden files
             if uid[0] == ".":
@@ -266,10 +269,11 @@ class SparkCSVDataReader(DataReader):
                         if f.endswith(".csv.gz")
                     ]
                 schema = None
-                schema_reader = AvroSchemaReader(absolute_dirname, dirname)
-                if schema_reader.is_schema_present():
+                schema_dir_base = dirname
+                schema_dir = absolute_dirname
+                if schema_reader.is_schema_present(schema_dir, schema_dir_base):
                     logger.info("Schema found")
-                    schema = schema_reader.get_schema()
+                    schema = schema_reader.get_schema(schema_dir, schema_dir_base)
                 else:
                     logger.info("Schema not found, inferring from data file")
                 variable_data = self._read_variable_data_files(data_files, schema)
@@ -285,13 +289,14 @@ class AvroSchemaReader(SchemaReader):
     Reads schema from local directory
     """
 
-    def __init__(self, schema_dir: str, schema_dir_base: str = None) -> None:
-        super().__init__(schema_dir)
-        self.schema_dir_base = schema_dir_base
-        if self.schema_dir_base is None:
-            self.schema_dir_base = os.path.basename(self.schema_dir)
+    def __init__(self) -> None:
+        self.schema_dict = {}
+        super().__init__(self.schema_dict)
 
-    def is_schema_present(self) -> bool:
+    def get_schema_dir_base(self, schema_dir):
+        return os.path.basename(schema_dir)
+
+    def is_schema_present(self, schema_dir, schema_dir_base) -> bool:
         """
         Checks if schema is present in local directory
 
@@ -300,14 +305,23 @@ class AvroSchemaReader(SchemaReader):
         bool
             True if schema is present, False otherwise
         """
-        self.schema_file = os.path.join(
-            self.schema_dir, f"schema-{self.schema_dir_base}.json"
+        schema_file = os.path.join(
+            schema_dir, f"schema-{schema_dir_base}.json"
         )
-        if os.path.exists(self.schema_file):
+
+        if os.path.exists(schema_file):
             return True
         return False
 
-    def get_schema(self) -> StructType:
+    def get_schema(self, schema_dir, schema_dir_base) -> StructType:
+        if schema_dir_base in self.schema_dict:
+            return self.schema_dict[schema_dir_base]
+        else:
+            schema = self._get_schema(schema_dir, schema_dir_base)
+            self.schema_dict[schema_dir_base] = schema
+            return schema
+
+    def _get_schema(self, schema_dir, schema_dir_base) -> StructType:
         """
         Reads schema from local directory
 
@@ -318,9 +332,12 @@ class AvroSchemaReader(SchemaReader):
         """
 
         schema_fields = []
+        schema_file = os.path.join(
+            schema_dir, f"schema-{schema_dir_base}.json"
+        )
         schema_dict = json.load(
             open(
-                os.path.join(self.schema_dir, self.schema_file),
+                os.path.join(schema_dir, schema_file),
                 "r",
                 encoding=constants.ENCODING,
             )
