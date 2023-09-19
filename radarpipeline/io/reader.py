@@ -266,7 +266,7 @@ class SparkCSVDataReader(DataReader):
                         if f.endswith(".csv.gz")
                     ]
                 schema = None
-                schema_reader = AvroSchemaReader(absolute_dirname)
+                schema_reader = AvroSchemaReader(absolute_dirname, dirname)
                 if schema_reader.is_schema_present():
                     logger.info("Schema found")
                     schema = schema_reader.get_schema()
@@ -285,8 +285,11 @@ class AvroSchemaReader(SchemaReader):
     Reads schema from local directory
     """
 
-    def __init__(self, schema_dir: str) -> None:
+    def __init__(self, schema_dir: str, schema_dir_base: str = None) -> None:
         super().__init__(schema_dir)
+        self.schema_dir_base = schema_dir_base
+        if self.schema_dir_base is None:
+            self.schema_dir_base = os.path.basename(self.schema_dir)
 
     def is_schema_present(self) -> bool:
         """
@@ -297,13 +300,10 @@ class AvroSchemaReader(SchemaReader):
         bool
             True if schema is present, False otherwise
         """
-
-        schema_dir_base = os.path.basename(self.schema_dir)
         self.schema_file = os.path.join(
-            self.schema_dir, f"schema-{schema_dir_base}.json"
+            self.schema_dir, f"schema-{self.schema_dir_base}.json"
         )
         if os.path.exists(self.schema_file):
-            self.schema_file = self.schema_file
             return True
         return False
 
