@@ -211,3 +211,41 @@ def reparent(newparent, oldpath):
     if oldpath[0] in (posixpath.sep, ntpath.sep):
         oldpath = '.' + oldpath
     return os.path.join(newparent, oldpath)
+
+
+def get_write_file_attr(feature_name, output_dir, data_format, compression):
+    """
+    Returns the file name and path for writing the data
+
+    Parameters
+    ----------
+    feature_name : str
+        Name of the feature
+    output_dir : str
+        Output directory
+    data_format : str
+        Data format to be used
+    compression : str
+        Compression to be used
+
+    Returns
+    -------
+    str
+        File name
+    str
+        File path
+    """
+    if data_format == "csv":
+        file_name = pascal_to_snake_case(feature_name) + ".csv"
+        file_name += ".gz" if compression == "gzip" else ""
+        file_path = os.path.join(output_dir, file_name)
+    elif data_format == "parquet":
+        file_name = pascal_to_snake_case(feature_name) + ".parquet"
+        file_name += ".gz" if compression == "gzip" else ""
+        file_path = os.path.join(output_dir, file_name)
+    elif data_format == "pickle":
+        file_name = pascal_to_snake_case(feature_name) + ".pkl"
+        file_path = os.path.join(output_dir, file_name)
+    else:
+        raise ValueError(f"Invalid data format {data_format} specified for spark writer")
+    return file_path

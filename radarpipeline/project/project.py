@@ -31,7 +31,7 @@ class Project:
         """
 
         self.valid_input_formats = ["csv", "csv.gz"]
-        self.valid_output_formats = ["csv"]
+        self.valid_output_formats = ["csv", "pickle", "parquet"]
         self.input_data = self._resolve_input_data(input_data)
         self.feature_path = os.path.abspath(
             os.path.join("radarpipeline", "features", "features")
@@ -297,19 +297,26 @@ class Project:
         """
         Exports the computed features to the specified location
         """
-
-        if self.config["configurations"]["df_type"] == "pandas":
-            writer = PandasDataWriter(
-                self.features,
-                self.config["output"]['config']["target_path"],
-                self.config["output"]["compress"],
-            )
-        elif self.config["configurations"]["df_type"] == "spark":
-            writer = SparkDataWriter(
-                self.features,
-                self.config["output"]['config']["target_path"],
-                self.config["output"]["compress"],
-            )
+        df_type = self.config["configurations"]["df_type"]
+        output_config = self.config["output"]
+        print(output_config)
+        if output_config['output_location'] == "local":
+            if df_type == "pandas":
+                writer = PandasDataWriter(
+                    self.features,
+                    output_config['config']["target_path"],
+                    output_config["compress"],
+                    output_config['data_format']
+                )
+            elif df_type == "spark":
+                writer = SparkDataWriter(
+                    self.features,
+                    output_config['config']["target_path"],
+                    output_config["compress"],
+                    output_config['data_format']
+                )
+            else:
+                raise ValueError("Wrong df_type")
         else:
-            raise ValueError("Wrong df_type")
+            raise ValueError("Output location type not supported")
         writer.write_data()
