@@ -14,7 +14,7 @@ class TestSparkCSVDataReader(unittest.TestCase):
         self.sparkcsvdatareader = SparkCSVDataReader(mock_config,
                                                      required_data=data_list)
         PANDAS_MOCK_PATH = ("tests/resources/test_data/test_participant/"
-                            "android_phone_step_count/test_variable_data.csv.gz")
+                            "android_phone_step_count/0000_11.csv.gz")
         self.mock_pandas = pd.read_csv(PANDAS_MOCK_PATH)
         self.radar_variable_data = RadarVariableData(self.mock_pandas)
         self.radar_user_data = RadarUserData({"android_phone_step_count":

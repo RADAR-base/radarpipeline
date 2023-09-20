@@ -133,6 +133,7 @@ class SparkCSVDataReader(DataReader):
             file_format = file.replace(source_path, "")
             if re.match(value, file_format):
                 return key
+        print(source_path)
         raise ValueError("Source type not recognized")
 
     def read_data(self) -> RadarData:

@@ -15,7 +15,7 @@ class TestSparkDataWriter(unittest.TestCase):
     def setUp(self):
         self.output_dir = "tests/resources/test_output/"
         PANDAS_MOCK_PATH = ("tests/resources/test_data/test_participant/"
-                            "android_phone_step_count/test_variable_data.csv.gz")
+                            "android_phone_step_count/0000_11.csv.gz")
         self.mock_pandas = pd.read_csv(PANDAS_MOCK_PATH)
         self.mock_pandas['key.projectId'] = self.mock_pandas['key.projectId'] \
             .str \
@@ -60,7 +60,7 @@ class TestPandasDataWriter(unittest.TestCase):
         # TODO: Make self.output_dir a temporary directory
         self.output_dir = "tests/resources/test_output/"
         PANDAS_MOCK_PATH = ("tests/resources/test_data/test_participant/"
-                            "android_phone_step_count/test_variable_data.csv.gz")
+                            "android_phone_step_count/0000_11.csv.gz")
         self.mock_pandas = pd.read_csv(PANDAS_MOCK_PATH)
         self.features = {"test_feature": self.mock_pandas}
         self.sparkdatawriter = PandasDataWriter(self.features, self.output_dir)
