@@ -13,6 +13,11 @@ from radarpipeline.common import constants
 from radarpipeline.datalib import RadarData, RadarUserData, RadarVariableData
 from radarpipeline.io.abc import DataReader, SchemaReader
 
+import avro
+from avro.datafile import DataFileReader, DataFileWriter
+from avro.io import DatumReader, DatumWriter
+from avro.schema import RecordSchema, Field, PrimitiveSchema, UnionSchema, Schema
+
 from multiprocessing import Pool
 from functools import partial
 from datetime import datetime
@@ -133,7 +138,6 @@ class SparkCSVDataReader(DataReader):
             file_format = file.replace(source_path, "")
             if re.match(value, file_format):
                 return key
-        print(source_path)
         raise ValueError("Source type not recognized")
 
     def read_data(self) -> RadarData:
@@ -202,9 +206,6 @@ class SparkCSVDataReader(DataReader):
 
         if self.df_type == "pandas":
             df = df.toPandas()
-
-        # To print the dataframe stats for cross-checking
-        # print(df.show(5))
 
         variable_data = RadarVariableData(df, self.df_type)
 
@@ -332,7 +333,6 @@ class AvroSchemaReader(SchemaReader):
             A StructType object defining the schema for pySpark
         """
 
-        schema_fields = []
         schema_file = os.path.join(
             schema_dir, f"schema-{schema_dir_base}.json"
         )
@@ -343,21 +343,93 @@ class AvroSchemaReader(SchemaReader):
                 encoding=constants.ENCODING,
             )
         )
-        key_dict = schema_dict["fields"][0]
-        value_dict = schema_dict["fields"][1]
+        avro_schema = avro.schema.parse(json.dumps(schema_dict))
+        key_schema = avro_schema.fields[0]
+        value_schema = avro_schema.fields[1]
+        schema_dict = self._merge_dicts(self._recursive_schema_loader(key_schema),
+                                        self._recursive_schema_loader(value_schema))
 
-        for key in key_dict["type"]["fields"]:
-            name = key["name"]
-            schema_fields.append(StructField(f"key.{name}", constants.STRING_TYPE))
+        schema = self._to_structtype(schema_dict)
+        return schema
 
-        for value in value_dict["type"]["fields"]:
-            name = value["name"]
-            typ = value["type"]
-            field_type = self._get_field(typ)
-            schema_fields.append(StructField(f"value.{name}", field_type, True))
-
+    def _to_structtype(self, schema_dict):
+        schema_fields = []
+        for key in schema_dict.keys():
+            schema_fields.append(StructField(key, schema_dict[key], True))
         schema = StructType(schema_fields)
         return schema
+
+    def _merge_dicts(self, dct1, dct2):
+        return {**dct1, **dct2}
+
+    def _recursive_schema_loader(self, record_schema, precursor="", schema_dict={}):
+        """_summary_
+
+        Args:
+            record_schema (_type_): _description_
+            precursor (str, optional): _description_. Defaults to "".
+            schema_dict (dict, optional): _description_. Defaults to {}.
+        """
+        if isinstance(record_schema, RecordSchema):
+            for f in record_schema.fields:
+                schema_dict = self._merge_dicts(
+                    schema_dict,
+                    self._recursive_schema_loader(f, precursor, schema_dict)
+                )
+            return schema_dict
+        elif isinstance(record_schema, Field):
+            if isinstance(record_schema.type, RecordSchema):
+                if precursor == "":
+                    updated_precursor = record_schema.name
+                else:
+                    updated_precursor = precursor + "." + record_schema.name
+                for f in record_schema.type.fields:
+                    schema_dict = self._merge_dicts(
+                        schema_dict,
+                        self._recursive_schema_loader(f, updated_precursor, schema_dict)
+                    )
+                return schema_dict
+            elif isinstance(record_schema.type, UnionSchema):
+                if precursor == "":
+                    updated_precursor = record_schema.name
+                else:
+                    updated_precursor = precursor + "." + record_schema.name
+                is_record_schema_present = any(
+                    isinstance(record_schema_ins, RecordSchema)
+                    for record_schema_ins in record_schema.type.schemas
+                )
+                if is_record_schema_present:
+                    for schema_instace in record_schema.type.schemas:
+                        if isinstance(schema_instace, RecordSchema):
+                            schema_dict = self._merge_dicts(
+                                schema_dict,
+                                self._recursive_schema_loader(
+                                    schema_instace, updated_precursor, schema_dict
+                                )
+                            )
+                else:
+                    union_schema = self._resolve_union_schema(
+                        record_schema.type.schemas
+                    )
+                    schema_dict[updated_precursor] = union_schema
+                return schema_dict
+            else:
+                if precursor == "":
+                    updated_precursor = record_schema.name
+                else:
+                    updated_precursor = precursor + "." + record_schema.name
+                schema_dict = self._merge_dicts(
+                    schema_dict,
+                    self._recursive_schema_loader(
+                        record_schema.type, updated_precursor, schema_dict)
+                )
+                return schema_dict
+
+        elif isinstance(record_schema, PrimitiveSchema):
+            schema_dict[precursor] = self._get_field(record_schema.type)
+            return schema_dict
+        else:
+            return {}
 
     def _get_field(self, data_type: Union[str, Dict, List]) -> Any:
         """
@@ -382,6 +454,12 @@ class AvroSchemaReader(SchemaReader):
             spark_data_type = self._get_data_type_from_mapping(data_type)
 
         return spark_data_type
+
+    def _resolve_union_schema(self, union_schemas: List[Schema]):
+        list_type = []
+        for schema in union_schemas:
+            list_type.append(schema.type)
+        return self._get_superior_type_from_list(list_type)
 
     def _handle_unknown_data_type(self, data_type: Union[str, Dict, List]) -> Any:
         """

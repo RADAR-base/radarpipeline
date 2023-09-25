@@ -250,3 +250,11 @@ def get_write_file_attr(feature_name, output_dir, data_format, compression):
         raise ValueError(f"Invalid data format {data_format} specified \
             for spark writer")
     return file_path
+
+class RecordType(object):
+    """
+    Class for representing a record type
+    """
+
+    def __init__(self,):
+        pass
