@@ -344,10 +344,7 @@ class AvroSchemaReader(SchemaReader):
             )
         )
         avro_schema = avro.schema.parse(json.dumps(schema_dict))
-        key_schema = avro_schema.fields[0]
-        value_schema = avro_schema.fields[1]
-        schema_dict = self._merge_dicts(self._recursive_schema_loader(key_schema),
-                                        self._recursive_schema_loader(value_schema))
+        schema_dict = self._recursive_schema_loader(avro_schema)
 
         schema = self._to_structtype(schema_dict)
         return schema
