@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional, Union
 import pyspark.sql as ps
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructField, StructType
+from pyspark.sql.utils import IllegalArgumentException
 
 from radarpipeline.common import constants
 from radarpipeline.datalib import RadarData, RadarUserData, RadarVariableData
@@ -22,7 +23,36 @@ from multiprocessing import Pool
 from functools import partial
 from datetime import datetime
 
+from collections import Counter
+
 logger = logging.getLogger(__name__)
+
+
+class Schemas(object):
+    def __init__(self, original_schema, original_schema_keys):
+        self.original_schema = original_schema
+        self.original_schema_hash = self._get_schema_hash(original_schema_keys)
+        self.counterdict = Counter({self.original_schema_hash: 1})
+        self.hashdict = {self.original_schema_hash: original_schema}
+
+    def _get_schema_hash(self, schema_keys):
+        return hash(frozenset(schema_keys))
+
+    def is_original_schema(self, schema_keys):
+        return self._get_schema_hash(schema_keys) == self.original_schema_hash
+
+    def get_schema(self):
+        most_freq_schema_hash = self.counterdict.most_common(1)[0][0]
+        return self.hashdict[most_freq_schema_hash]
+
+    def add_schema(self, schema_keys, schema):
+        schema_hash = self._get_schema_hash(schema_keys)
+        if schema_hash not in self.hashdict:
+            self.hashdict[schema_hash] = schema
+        self.counterdict[schema_hash] += 1
+
+    def update_schema_counter(self, schema_keys):
+        self.counterdict[self._get_schema_hash(schema_keys)] += 1
 
 
 class SparkCSVDataReader(DataReader):
@@ -48,11 +78,11 @@ class SparkCSVDataReader(DataReader):
                                 'spark.memory.offHeap.enabled': True,
                                 'spark.memory.offHeap.size': '20g',
                                 'spark.driver.maxResultSize': '0'}
-
         self.required_data = required_data
         self.df_type = df_type
         self.source_path = self.config['config'].get("source_path", "")
         self.spark_config = default_spark_config
+        self.schema_reader = AvroSchemaReader()
         if spark_config is not None:
             self.spark_config.update(spark_config)
         self.spark = self._initialize_spark_session()
@@ -118,7 +148,7 @@ class SparkCSVDataReader(DataReader):
         # For further reading:
         # https://spark.apache.org/docs/3.0.1/sql-pyspark-pandas-with-arrow.html
 
-        spark.sparkContext.setLogLevel("ERROR")
+        spark.sparkContext.setLogLevel("OFF")
         logger.info("Spark Session created")
         return spark
 
@@ -169,7 +199,8 @@ class SparkCSVDataReader(DataReader):
     def _read_variable_data_files(
         self,
         data_files: List[str],
-        schema: Optional[StructType] = None,
+        schema: Schemas = None,
+        variable_name: Optional[str] = None
     ) -> RadarVariableData:
         """
         Reads data from a list of data files and returns a RadarVariableData object
@@ -191,8 +222,8 @@ class SparkCSVDataReader(DataReader):
                 data_files,
                 format="csv",
                 header=True,
-                schema=schema,
-                inferSchema="false",
+                schema=schema.get_schema(),
+                enforceSchema="false",
                 encoding=constants.ENCODING,
             )
         else:
@@ -205,14 +236,28 @@ class SparkCSVDataReader(DataReader):
             )
 
         if self.df_type == "pandas":
-            df = df.toPandas()
+            try:
+                df = df.toPandas()
+                schema.update_schema_counter(df.columns)
+            except Exception:
+                logger.warning("Failed to convert to pandas dataframe. "
+                               "inferring schema")
+                df = self.spark.read.load(
+                    data_files,
+                    format="csv",
+                    header=True,
+                    inferSchema="true",
+                    encoding=constants.ENCODING,
+                )
+                inferred_schema = df.schema
+                schema.add_schema(df.columns, inferred_schema)
+                df = df.toPandas()
 
         variable_data = RadarVariableData(df, self.df_type)
 
         return variable_data
 
     def _read_data_from_old_format(self, source_path: str, user_data_dict: dict):
-        schema_reader = AvroSchemaReader()
         for uid in os.listdir(source_path):
             # Skip hidden files
             if uid[0] == ".":
@@ -233,13 +278,14 @@ class SparkCSVDataReader(DataReader):
                 ]
                 schema = None
                 schema_dir = absolute_dirname
-                schema_dir_base = schema_reader.get_schema_dir_base(schema_dir)
-                if schema_reader.is_schema_present(schema_dir, schema_dir_base):
+                schema_dir_base = self.schema_reader.get_schema_dir_base(schema_dir)
+                if self.schema_reader.is_schema_present(schema_dir, schema_dir_base):
                     logger.info("Schema found")
-                    schema = schema_reader.get_schema(schema_dir, schema_dir_base)
+                    schema = self.schema_reader.get_schema(schema_dir, schema_dir_base)
                 else:
                     logger.info("Schema not found, inferring from data file")
-                variable_data = self._read_variable_data_files(data_files, schema)
+                variable_data = self._read_variable_data_files(data_files, schema,
+                                                               schema_dir_base)
                 if variable_data.get_data_size() > 0:
                     variable_data_dict[dirname] = variable_data
             user_data_dict[uid] = RadarUserData(variable_data_dict, self.df_type)
@@ -248,7 +294,6 @@ class SparkCSVDataReader(DataReader):
 
     def _read_data_from_new_format(self, source_path: str, user_data_dict: dict):
         # RADAR_NEW: uid/variable/yyyymm/yyyymmdd.csv.gz
-        schema_reader = AvroSchemaReader()
         for uid in os.listdir(source_path):
             # Skip hidden files
             if uid[0] == ".":
@@ -273,12 +318,13 @@ class SparkCSVDataReader(DataReader):
                 schema = None
                 schema_dir_base = dirname
                 schema_dir = absolute_dirname
-                if schema_reader.is_schema_present(schema_dir, schema_dir_base):
+                if self.schema_reader.is_schema_present(schema_dir, schema_dir_base):
                     logger.info("Schema found")
-                    schema = schema_reader.get_schema(schema_dir, schema_dir_base)
+                    schema = self.schema_reader.get_schema(schema_dir, schema_dir_base)
                 else:
                     logger.info("Schema not found, inferring from data file")
-                variable_data = self._read_variable_data_files(data_files, schema)
+                variable_data = self._read_variable_data_files(data_files, schema,
+                                                               schema_dir_base)
                 if variable_data.get_data_size() > 0:
                     variable_data_dict[dirname] = variable_data
             user_data_dict[uid] = RadarUserData(variable_data_dict, self.df_type)
@@ -319,9 +365,10 @@ class AvroSchemaReader(SchemaReader):
         if schema_dir_base in self.schema_dict:
             return self.schema_dict[schema_dir_base]
         else:
-            schema = self._get_schema(schema_dir, schema_dir_base)
-            self.schema_dict[schema_dir_base] = schema
-            return schema
+            schema, schema_keys = self._get_schema(schema_dir, schema_dir_base)
+            schema_obj = Schemas(schema, schema_keys)
+            self.schema_dict[schema_dir_base] = schema_obj
+            return schema_obj
 
     def _get_schema(self, schema_dir, schema_dir_base) -> StructType:
         """
@@ -346,15 +393,20 @@ class AvroSchemaReader(SchemaReader):
         avro_schema = avro.schema.parse(json.dumps(schema_dict))
         schema_dict = self._recursive_schema_loader(avro_schema)
 
-        schema = self._to_structtype(schema_dict)
-        return schema
+        schema, schema_keys = self._to_structtype(schema_dict)
+        return schema, schema_keys
+
+    def _add_new_schema(self, schema_dir_base, schema):
+        self.schema_dict[schema_dir_base] = schema
 
     def _to_structtype(self, schema_dict):
         schema_fields = []
+        schema_keys = []
         for key in schema_dict.keys():
             schema_fields.append(StructField(key, schema_dict[key], True))
+            schema_keys.append(key)
         schema = StructType(schema_fields)
-        return schema
+        return schema, schema_keys
 
     def _merge_dicts(self, dct1, dct2):
         return {**dct1, **dct2}
