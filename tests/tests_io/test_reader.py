@@ -46,7 +46,8 @@ class TestSparkCustomConfig(unittest.TestCase):
             "spark.executor.memory": "5g",
             "spark.driver.memory": "10g",
             "spark.memory.offHeap.size": "10g",
-            "spark.driver.maxResultSize": "0"}
+            "spark.driver.maxResultSize": "0",
+            "spark.log.level": "ERROR"}
         data_list = ['android_phone_step_count']
         self.sparkcsvdatareader = SparkCSVDataReader(mock_config,
                                                      required_data=data_list,
