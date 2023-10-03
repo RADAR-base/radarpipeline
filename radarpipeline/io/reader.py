@@ -25,6 +25,7 @@ from datetime import datetime
 
 from collections import Counter
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -77,7 +78,8 @@ class SparkCSVDataReader(DataReader):
                                 'spark.executor.memory': '10g',
                                 'spark.memory.offHeap.enabled': True,
                                 'spark.memory.offHeap.size': '20g',
-                                'spark.driver.maxResultSize': '0'}
+                                'spark.driver.maxResultSize': '0',
+                                'spark.log.level': "OFF"}
         self.required_data = required_data
         self.df_type = df_type
         self.source_path = self.config['config'].get("source_path", "")
@@ -138,17 +140,18 @@ class SparkCSVDataReader(DataReader):
                     self.spark_config['spark.memory.offHeap.size'])
             .config('spark.driver.maxResultSize',
                     self.spark_config['spark.driver.maxResultSize'])
+            .config('spark.log.level',
+                    self.spark_config['spark.log.level'])
             .getOrCreate()
         )
-
+        spark._jsc.setLogLevel(self.spark_config['spark.log.level'])
+        spark.sparkContext.setLogLevel("OFF")
         # Enable Apache Arrow for optimizations in Spark to Pandas conversion
         spark.conf.set("spark.sql.execution.arrow.pyspark.enabled", "true")
         # Fallback to use non-Arrow conversion in case of errors
         spark.conf.set("spark.sql.execution.arrow.pyspark.fallback.enabled", "true")
         # For further reading:
         # https://spark.apache.org/docs/3.0.1/sql-pyspark-pandas-with-arrow.html
-
-        spark.sparkContext.setLogLevel("OFF")
         logger.info("Spark Session created")
         return spark
 
