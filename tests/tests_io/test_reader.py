@@ -191,7 +191,6 @@ class TestAvroSchemaReader(unittest.TestCase):
         schema_name = "connect_fitbit_activity_log"
         schema = self.avroschemareader.get_schema(self.SCHEMA_TEST_DIR, schema_name)
         schema_val = schema.get_schema()
-        print(schema_val)
         expected_schema = StructType([StructField('key.projectId', StringType(), True),
                                       StructField('key.userId', StringType(), True),
                                       StructField('key.sourceId', StringType(), True),
