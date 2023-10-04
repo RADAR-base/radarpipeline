@@ -110,6 +110,8 @@ class PandasDataWriter(DataWriter):
                 elif self.data_format == "parquet":
                     if self.compression == "infer":
                         feature_df.to_parquet(file_path, compression=None)
+                    else:
+                        feature_df.to_parquet(file_path, compression=self.compression)
                 else:
                     raise ValueError(
                         f"Invalid data format {self.data_format} specified"

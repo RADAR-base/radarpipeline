@@ -388,7 +388,7 @@ class AvroSchemaReader(SchemaReader):
         )
         schema_dict = json.load(
             open(
-                os.path.join(schema_dir, schema_file),
+                schema_file,
                 "r",
                 encoding=constants.ENCODING,
             )
