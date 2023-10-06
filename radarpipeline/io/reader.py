@@ -307,13 +307,14 @@ class SparkCSVDataReader(DataReader):
                 if dirname not in os.listdir(os.path.join(source_path, uid)):
                     continue
                 logger.info(f"Reading data for variable: {dirname}")
+                data_files = []
                 for date in os.listdir(os.path.join(source_path, uid, dirname)):
                     # Skip hidden files
                     if date[0] == ".":
                         continue
                     absolute_dirname = os.path.abspath(
                         os.path.join(source_path, uid, dirname, date))
-                    data_files = [
+                    data_files = data_files + [
                         os.path.join(absolute_dirname, f)
                         for f in os.listdir(absolute_dirname)
                         if f.endswith(".csv.gz")
