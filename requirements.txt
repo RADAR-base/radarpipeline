@@ -16,3 +16,4 @@ pytest-cov
 pytest-mock
 pytest-sftpserver
 dhp
+avro==1.11.2

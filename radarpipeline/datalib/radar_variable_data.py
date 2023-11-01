@@ -1,10 +1,12 @@
 from typing import List
-
+import logging
 import pandas as pd
 import pyspark.sql.functions as f
 
 from radarpipeline.datalib.abc import Data
 from radarpipeline.datatypes import DataType
+
+logger = logging.getLogger(__name__)
 
 
 class RadarVariableData(Data):
@@ -53,15 +55,18 @@ class RadarVariableData(Data):
                     "value.dateTime", f.to_date(self._data["`value.dateTime`"])
                 )
         else:
-            if "value.time" in self.get_data_keys():
-                self._data["value.time"] = pd.to_datetime(
-                    self._data["value.time"], unit="s"
-                )
-            if "value.timeReceived" in self.get_data_keys():
-                self._data["value.timeReceived"] = pd.to_datetime(
-                    self._data["value.timeReceived"], unit="s"
-                )
-            if "value.dateTime" in self.get_data_keys():
-                self._data["value.dateTime"] = pd.to_datetime(
-                    self._data["value.dateTime"], unit="s"
-                )
+            try:
+                if "value.time" in self.get_data_keys():
+                    self._data["value.time"] = pd.to_datetime(
+                        self._data["value.time"].astype(str), unit="s"
+                    )
+                if "value.timeReceived" in self.get_data_keys():
+                    self._data["value.timeReceived"] = pd.to_datetime(
+                        self._data["value.timeReceived"].astype(str), unit="s"
+                    )
+                if "value.dateTime" in self.get_data_keys():
+                    self._data["value.dateTime"] = pd.to_datetime(
+                        self._data["value.dateTime"].astype(str), unit="s"
+                    )
+            except ValueError:
+                logger.warning("Unable to convert time columns to datetime format")

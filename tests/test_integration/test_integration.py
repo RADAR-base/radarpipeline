@@ -37,7 +37,7 @@ class TestIntegration(unittest.TestCase):
         assert_frame_equal(expected_df.sort_values(['key.userId', 'date'])
                            .reset_index(drop=True),
                            actual_df.sort_values(['key.userId', 'date'])
-                           .reset_index(drop=True))
+                           .reset_index(drop=True), check_datetimelike_compat=True)
         path.unlink()
         path = pl.Path(os.path.join(self.output_dir, "step_count_per_day.csv"))
         self.assertIsFile(path)

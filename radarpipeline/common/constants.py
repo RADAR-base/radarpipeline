@@ -33,7 +33,7 @@ DATA_TYPE_MAPPING = {
     "char": STRING_TYPE,
     "enum": STRING_TYPE,
     "array": STRING_TYPE,
-    "boolean": BOOLEAN_TYPE,
+    "boolean": BOOLEAN_TYPE
 }
 
 INTEGER_TYPES = set([BYTE_TYPE, SHORT_TYPE, INT_TYPE, LONG_TYPE])
