@@ -12,7 +12,7 @@ setup(
     name="radarpipeline",
     version="2.1.0",
     license='Apache',
-    description="A python feature generation and visualization package use with RADAR project data.",
+    description="A python feature generation and visualization package use with RADAR-base project data.",
     url="https://github.com/RADAR-base/radarpipeline",
     download_url='https://github.com/RADAR-base/radarpipeline/archive/refs/tags/v2.1.0.tar.gz',
     readme="README.md",
