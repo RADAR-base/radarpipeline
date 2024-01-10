@@ -250,3 +250,20 @@ def get_write_file_attr(feature_name, output_dir, data_format, compression):
         raise ValueError(f"Invalid data format {data_format} specified \
             for spark writer")
     return file_path
+
+
+def get_hash(array : List) -> int:
+    """
+    Returns the hash of the array
+
+    Parameters
+    ----------
+    array : list
+        List of values
+
+    Returns
+    -------
+    str
+        Hash of the array
+    """
+    return hash(tuple(array))

@@ -2,17 +2,19 @@ import json
 import logging
 import os
 from glob import glob
+import gzip
 import re
 from typing import Any, Dict, List, Optional, Union
 
 import pyspark.sql as ps
-from pyspark.sql import SparkSession
+from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql.types import StructField, StructType
 from pyspark.sql.utils import IllegalArgumentException
 
 from radarpipeline.common import constants
 from radarpipeline.datalib import RadarData, RadarUserData, RadarVariableData
 from radarpipeline.io.abc import DataReader, SchemaReader
+from radarpipeline.common.utils import get_hash
 
 import avro
 from avro.datafile import DataFileReader, DataFileWriter
@@ -24,6 +26,7 @@ from functools import partial
 from datetime import datetime
 
 from collections import Counter
+from functools import reduce, partial
 
 
 logger = logging.getLogger(__name__)
@@ -33,27 +36,29 @@ class Schemas(object):
     def __init__(self, original_schema, original_schema_keys):
         self.original_schema = original_schema
         self.original_schema_hash = self._get_schema_hash(original_schema_keys)
-        self.counterdict = Counter({self.original_schema_hash: 1})
         self.hashdict = {self.original_schema_hash: original_schema}
 
     def _get_schema_hash(self, schema_keys):
-        return hash(frozenset(schema_keys))
+        return get_hash(schema_keys)
 
     def is_original_schema(self, schema_keys):
         return self._get_schema_hash(schema_keys) == self.original_schema_hash
 
-    def get_schema(self):
-        most_freq_schema_hash = self.counterdict.most_common(1)[0][0]
-        return self.hashdict[most_freq_schema_hash]
+    def is_schema_present(self, schema_keys):
+        return self._get_schema_hash(schema_keys) in self.hashdict
+
+    def is_schema_hash_present(self, schema_hash):
+        return schema_hash in self.hashdict
+
+    def get_schema(self, schema_keys):
+        return self.hashdict[self._get_schema_hash(schema_keys)]
+
+    def get_schema_by_hash(self, schema_hash):
+        return self.hashdict[schema_hash]
 
     def add_schema(self, schema_keys, schema):
         schema_hash = self._get_schema_hash(schema_keys)
-        if schema_hash not in self.hashdict:
-            self.hashdict[schema_hash] = schema
-        self.counterdict[schema_hash] += 1
-
-    def update_schema_counter(self, schema_keys):
-        self.counterdict[self._get_schema_hash(schema_keys)] += 1
+        self.hashdict[schema_hash] = schema
 
 
 class SparkCSVDataReader(DataReader):
@@ -88,6 +93,7 @@ class SparkCSVDataReader(DataReader):
         if spark_config is not None:
             self.spark_config.update(spark_config)
         self.spark = self._initialize_spark_session()
+        self.unionByName = partial(DataFrame.unionByName, allowMissingColumns=True)
 
     def _initialize_spark_session(self) -> ps.SparkSession:
         """
@@ -220,15 +226,48 @@ class SparkCSVDataReader(DataReader):
         RadarVariableData
             A RadarVariableData object containing all the read data
         """
+        """
+        New approach: If schema is present, use it to lazily read the data without enforcing schema
+        Check if schema is present in the schema dict by matching schema keys
+        If it is present read it using the schema
+        Else infer schema and add it to the schema directory
+        """
         if schema:
-            df = self.spark.read.load(
-                data_files,
-                format="csv",
-                header=True,
-                schema=schema.get_schema(),
-                enforceSchema="false",
-                encoding=constants.ENCODING,
-            )
+            file_dict = {}
+            for file in data_files:
+                with gzip.open(file, 'rb') as f:
+                    columns = f.readline().decode("utf-8").split(",")
+                    f.close()
+                column_hash = get_hash(columns)
+                if column_hash in file_dict:
+                    file_dict[column_hash].append(file)
+                else:
+                    file_dict[column_hash] = [file]
+            dfs = []
+            for column_hash in file_dict.keys():
+                if schema.is_schema_hash_present(column_hash):
+                    df = self.spark.read.load(
+                        file_dict[column_hash],
+                        format="csv",
+                        header=True,
+                        schema=schema.get_schema_by_hash(column_hash),
+                        enforceSchema="false",
+                        encoding=constants.ENCODING,
+                    )
+                    dfs.append(df)
+                else:
+                    df = self.spark.read.load(
+                        file_dict[column_hash],
+                        format="csv",
+                        header=True,
+                        inferSchema="true",
+                        encoding=constants.ENCODING,
+                    )
+                    inferred_schema = df.schema
+                    schema.add_schema(df.columns, inferred_schema)
+                    dfs.append(df)
+            # Spark Join all the dfs
+            df = reduce(self.unionByName, dfs)
         else:
             df = self.spark.read.load(
                 data_files,
@@ -241,21 +280,9 @@ class SparkCSVDataReader(DataReader):
         if self.df_type == "pandas":
             try:
                 df = df.toPandas()
-                schema.update_schema_counter(df.columns)
             except Exception:
                 logger.warning("Failed to convert to pandas dataframe. "
                                "inferring schema")
-                df = self.spark.read.load(
-                    data_files,
-                    format="csv",
-                    header=True,
-                    inferSchema="true",
-                    encoding=constants.ENCODING,
-                )
-                inferred_schema = df.schema
-                schema.add_schema(df.columns, inferred_schema)
-                df = df.toPandas()
-
         variable_data = RadarVariableData(df, self.df_type)
 
         return variable_data
@@ -387,17 +414,17 @@ class AvroSchemaReader(SchemaReader):
         schema_file = os.path.join(
             schema_dir, f"schema-{schema_dir_base}.json"
         )
-        schema_dict = json.load(
+        schema_content = json.load(
             open(
                 schema_file,
                 "r",
                 encoding=constants.ENCODING,
             )
         )
-        avro_schema = avro.schema.parse(json.dumps(schema_dict))
-        schema_dict = self._recursive_schema_loader(avro_schema)
+        avro_schema = avro.schema.parse(json.dumps(schema_content))
+        schema_content_dict = self._recursive_schema_loader(avro_schema)
 
-        schema, schema_keys = self._to_structtype(schema_dict)
+        schema, schema_keys = self._to_structtype(schema_content_dict)
         return schema, schema_keys
 
     def _add_new_schema(self, schema_dir_base, schema):
