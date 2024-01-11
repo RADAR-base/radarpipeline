@@ -50,7 +50,9 @@ class Schemas(object):
     def is_schema_hash_present(self, schema_hash):
         return schema_hash in self.hashdict
 
-    def get_schema(self, schema_keys):
+    def get_schema(self, schema_keys=None):
+        if schema_keys is None:
+            return self.original_schema
         return self.hashdict[self._get_schema_hash(schema_keys)]
 
     def get_schema_by_hash(self, schema_hash):
@@ -205,6 +207,19 @@ class SparkCSVDataReader(DataReader):
                     source_path_item, user_data_dict)
         return radar_data
 
+    def _filter_files_by_headers(self, data_files):
+        file_dict = {}
+        for file in data_files:
+            with gzip.open(file, 'rb') as f:
+                columns = f.readline().decode("utf-8").split(",")
+                f.close()
+            column_hash = get_hash(columns)
+            if column_hash in file_dict:
+                file_dict[column_hash].append(file)
+            else:
+                file_dict[column_hash] = [file]
+        return file_dict
+
     def _read_variable_data_files(
         self,
         data_files: List[str],
@@ -232,18 +247,9 @@ class SparkCSVDataReader(DataReader):
         If it is present read it using the schema
         Else infer schema and add it to the schema directory
         """
+        dfs = []
+        file_dict = self._filter_files_by_headers(data_files)
         if schema:
-            file_dict = {}
-            for file in data_files:
-                with gzip.open(file, 'rb') as f:
-                    columns = f.readline().decode("utf-8").split(",")
-                    f.close()
-                column_hash = get_hash(columns)
-                if column_hash in file_dict:
-                    file_dict[column_hash].append(file)
-                else:
-                    file_dict[column_hash] = [file]
-            dfs = []
             for column_hash in file_dict.keys():
                 if schema.is_schema_hash_present(column_hash):
                     df = self.spark.read.load(
@@ -266,16 +272,19 @@ class SparkCSVDataReader(DataReader):
                     inferred_schema = df.schema
                     schema.add_schema(df.columns, inferred_schema)
                     dfs.append(df)
-            # Spark Join all the dfs
-            df = reduce(self.unionByName, dfs)
         else:
-            df = self.spark.read.load(
-                data_files,
-                format="csv",
-                header=True,
-                inferSchema="true",
-                encoding=constants.ENCODING,
-            )
+            for column_hash in file_dict:
+                df = self.spark.read.load(
+                    file_dict[column_hash],
+                    format="csv",
+                    header=True,
+                    inferSchema="true",
+                    encoding=constants.ENCODING,
+                )
+                dfs.append(df)
+
+        # Spark Join all the dfs
+        df = reduce(self.unionByName, dfs)
 
         if self.df_type == "pandas":
             try:
