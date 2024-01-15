@@ -94,10 +94,9 @@ class RadarData(Data):
         # Combine the all data for each variable
         for var in variable_dict:
             if len(variable_dict[var]) > 0:
-                if self.df_type == "spark":
-                    combined_df = utils.combine_pyspark_dfs(variable_dict[var])
-                else:
-                    combined_df = pd.concat(variable_dict[var], ignore_index=True)
+                combined_df = utils.combine_pyspark_dfs(variable_dict[var])
+                if self.df_type == "pandas":
+                    combined_df = combined_df.toPandas()
                 variable_data_list.append(combined_df)
 
         if is_only_one_var:

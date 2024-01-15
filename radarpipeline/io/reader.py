@@ -22,7 +22,6 @@ from avro.io import DatumReader, DatumWriter
 from avro.schema import RecordSchema, Field, PrimitiveSchema, UnionSchema, Schema
 
 from multiprocessing import Pool
-from functools import partial
 from datetime import datetime
 
 from collections import Counter
@@ -241,12 +240,6 @@ class SparkCSVDataReader(DataReader):
         RadarVariableData
             A RadarVariableData object containing all the read data
         """
-        """
-        New approach: If schema is present, use it to lazily read the data without enforcing schema
-        Check if schema is present in the schema dict by matching schema keys
-        If it is present read it using the schema
-        Else infer schema and add it to the schema directory
-        """
         dfs = []
         file_dict = self._filter_files_by_headers(data_files)
         if schema:
@@ -286,12 +279,12 @@ class SparkCSVDataReader(DataReader):
         # Spark Join all the dfs
         df = reduce(self.unionByName, dfs)
 
-        if self.df_type == "pandas":
-            try:
-                df = df.toPandas()
-            except Exception:
-                logger.warning("Failed to convert to pandas dataframe. "
-                               "inferring schema")
+        #if self.df_type == "pandas":
+        #    try:
+        #        df = df.toPandas()
+        #    except Exception:
+        #        logger.warning("Failed to convert to pandas dataframe. "
+        #                       "inferring schema")
         variable_data = RadarVariableData(df, self.df_type)
 
         return variable_data
