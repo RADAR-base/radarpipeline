@@ -10,11 +10,11 @@ def read_file(filename):
 
 setup(
     name="radarpipeline",
-    version="2.0.1",
+    version="2.1.0",
     license='Apache',
-    description="A python feature generation and visualization package use with RADAR project data.",
+    description="A python feature generation and visualization package use with RADAR-base project data.",
     url="https://github.com/RADAR-base/radarpipeline",
-    download_url='https://github.com/RADAR-base/radarpipeline/archive/refs/tags/v2.0.1.tar.gz',
+    download_url='https://github.com/RADAR-base/radarpipeline/archive/refs/tags/v2.1.0.tar.gz',
     readme="README.md",
     long_description=read_file('README.md'),
     long_description_content_type='text/markdown',
@@ -28,9 +28,10 @@ setup(
         "numpy==1.22.3",
         "scipy==1.10.0",
         "pyspark[sql]==3.3.0",
-        "GitPython==3.1.30",
+        "GitPython>=3.1.32",
         "strictyaml==1.7.3",
-        "paramiko==3.1.0"],
+        "paramiko==3.1.0",
+        "avro==1.11.2"],
     test_suite="tests",
     include_package_data=True,
     classifiers=[

@@ -209,7 +209,6 @@ class ConfigValidator():
             else:
                 # Check if local_directory is absolute path. If not, then set it.
                 local_directory = self.config["output"]['config']["target_path"]
-                local_directory = utils.get_absolute_path(local_directory)
                 if not os.path.exists(local_directory):
                     os.makedirs(local_directory, exist_ok=True)
                 self.config["output"]['config']["target_path"] = local_directory
