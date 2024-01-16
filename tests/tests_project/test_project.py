@@ -94,7 +94,5 @@ class TestProjectRemoteLink(unittest.TestCase):
         project = Project(self.remotelink)
         project_config = project._get_config()
         schema = utils.get_yaml_schema()
-        print(project_config)
-        print(self.expected_config)
         expected_config_updated = as_document(self.expected_config, schema).data
         self.assertDictEqual(project_config, expected_config_updated)

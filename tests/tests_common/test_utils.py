@@ -83,7 +83,6 @@ class TestReadYaml(unittest.TestCase):
 
     def test_read_correct_yaml(self):
         config = read_yaml(self.TESTDATA_FILENAME)
-        print(config)
         expected_config = {
             'project': {
                 'project_name': 'mock_project',
@@ -114,7 +113,6 @@ class TestReadYaml(unittest.TestCase):
 
     def test_read_yaml_with_spark_config(self):
         config = read_yaml(self.TESTDATA_FILENAME_SPARK)
-        print(config)
         expected_config = {
             'project': {
                 'project_name': 'mock_project',

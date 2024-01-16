@@ -67,8 +67,7 @@ class SparkCSVDataReader(DataReader):
     Read CSV data from local directory using pySpark
     """
 
-    def __init__(self, config: Dict, required_data: List[str], df_type: str = "pandas",
-                 spark_config: Dict = {}):
+    def __init__(self, spark_session: ps.SparkSession, config: Dict, required_data: List[str], df_type: str = "pandas"):
         super().__init__(config)
         self.source_formats = {
             # RADAR_OLD: uid/variable/yyyymmdd_hh00.csv.gz
@@ -91,9 +90,7 @@ class SparkCSVDataReader(DataReader):
         self.source_path = self.config['config'].get("source_path", "")
         self.spark_config = default_spark_config
         self.schema_reader = AvroSchemaReader()
-        if spark_config is not None:
-            self.spark_config.update(spark_config)
-        self.spark = self._initialize_spark_session()
+        self.spark = spark_session
         self.unionByName = partial(DataFrame.unionByName, allowMissingColumns=True)
 
     def _initialize_spark_session(self) -> ps.SparkSession:
@@ -278,13 +275,6 @@ class SparkCSVDataReader(DataReader):
 
         # Spark Join all the dfs
         df = reduce(self.unionByName, dfs)
-
-        #if self.df_type == "pandas":
-        #    try:
-        #        df = df.toPandas()
-        #    except Exception:
-        #        logger.warning("Failed to convert to pandas dataframe. "
-        #                       "inferring schema")
         variable_data = RadarVariableData(df, self.df_type)
 
         return variable_data

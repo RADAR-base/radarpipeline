@@ -21,7 +21,6 @@ class RadarVariableData(Data):
         self._data = data
         self.df_type = df_type
         self._preprocess_data()
-        print(self._data)
 
     def get_data(self) -> DataType:
         return self._data
