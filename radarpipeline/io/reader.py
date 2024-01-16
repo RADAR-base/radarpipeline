@@ -20,13 +20,10 @@ import avro
 from avro.datafile import DataFileReader, DataFileWriter
 from avro.io import DatumReader, DatumWriter
 from avro.schema import RecordSchema, Field, PrimitiveSchema, UnionSchema, Schema
-
-from multiprocessing import Pool
 from datetime import datetime
 
 from collections import Counter
 from functools import reduce, partial
-
 
 logger = logging.getLogger(__name__)
 
@@ -75,13 +72,10 @@ class Reader():
         """_summary_
 
         Args:
-            spark_session (ps.SparkSession): _description_
-            config (Dict): _description_
-            required_data (List[str]): _description_
-            df_type (str, optional): _description_. Defaults to "pandas".
-
-        Raises:
-            NotImplementedError: _description_
+            spark_session (ps.SparkSession): spark session instance
+            config (Dict): Configuration data from the config.yaml file
+            required_data (List[str]): List of required data
+            df_type (str, optional): Type of dataframe format. Defaults to "pandas".
         """
         self.config = config
         self.data_type = self.config["input"]["data_format"]
