@@ -11,7 +11,7 @@ from git.repo import Repo
 
 from radarpipeline.common import utils
 from radarpipeline.features import Feature, FeatureGroup
-from radarpipeline.io import PandasDataWriter, SparkCSVDataReader, SparkDataWriter
+from radarpipeline.io import PandasDataWriter, SparkDataWriter, Reader
 from radarpipeline.io import SftpDataReader
 from radarpipeline.project.validations import ConfigValidator
 from radarpipeline.project.sparkengine import SparkEngine
@@ -44,7 +44,8 @@ class Project:
         self.validator.validate()
         self.feature_groups = self._get_feature_groups()
         self.total_required_data = self._get_total_required_data()
-        ## Initialize spark session
+        if "spark_config" not in self.config:
+            self.config["spark_config"] = {}
         self.spark_engine = SparkEngine(self.config['spark_config'])
         self.spark_session = self.spark_engine.initialize_spark_session()
 
@@ -225,20 +226,15 @@ class Project:
         """
         Fetches the data from the data source
         """
-        if 'spark_config' not in self.config:
-            self.config['spark_config'] = {}
 
         if self.config["input"]["data_type"] == "local":
-            if self.config["input"]["data_format"] in self.valid_input_formats:
-                sparkcsvdatareader = SparkCSVDataReader(
-                    self.spark_session,
-                    self.config["input"],
-                    self.total_required_data,
-                    self.config["configurations"]["df_type"],
-                )
-                self.data = sparkcsvdatareader.read_data()
-            else:
-                raise ValueError("Wrong data format")
+            datareader= Reader(
+                self.spark_session,
+                self.config,
+                self.total_required_data,
+                self.config["configurations"]["df_type"],
+            )
+            self.data = datareader.read_data()
 
         elif self.config["input"]["data_type"] == "mock":
             MOCK_URL = "https://github.com/RADAR-base-Analytics/mockdata"
@@ -252,11 +248,13 @@ class Project:
                     "source_path": mock_data_directory
                 }
             }
-            sparkcsvdatareader = SparkCSVDataReader(
-                mock_config_input, self.total_required_data,
-                spark_config=self.config['spark_config']
+            datareader = Reader(
+                self.spark_session,
+                mock_config_input,
+                self.total_required_data,
+                self.config["configurations"]["df_type"],
             )
-            self.data = sparkcsvdatareader.read_data()
+            self.data = datareader.read_data()
 
         elif self.config["input"]["data_type"] == "sftp":
             sftp_data_reader = SftpDataReader(self.config["input"]["config"],
@@ -269,13 +267,13 @@ class Project:
                     "source_path": root_dir
                 }
             }
-            sparkcsvdatareader = SparkCSVDataReader(
+            datareader = Reader(
+                self.spark_session,
                 sftp_local_config,
                 self.total_required_data,
                 self.config["configurations"]["df_type"],
-                self.config['spark_config']
-            ).read_data()
-            self.data = sparkcsvdatareader.read_data()
+            )
+            self.data = datareader.read_data()
         else:
             raise ValueError("Wrong data location")
 

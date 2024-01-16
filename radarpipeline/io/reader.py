@@ -62,12 +62,55 @@ class Schemas(object):
         self.hashdict[schema_hash] = schema
 
 
+class Reader():
+    '''
+    Class for reading data from a file
+    Reader(data_type : str, data_path: str, variables: Union[str, List])
+    reader = Reader(...)
+    reader.get_data(variables=Union[List, str])
+    reader.get_user_data(user_id=..)
+    '''
+    def __init__(self, spark_session: ps.SparkSession,
+                 config: Dict, required_data: List[str], df_type: str = "pandas"):
+        """_summary_
+
+        Args:
+            spark_session (ps.SparkSession): _description_
+            config (Dict): _description_
+            required_data (List[str]): _description_
+            df_type (str, optional): _description_. Defaults to "pandas".
+
+        Raises:
+            NotImplementedError: _description_
+        """
+        self.config = config
+        self.data_type = self.config["input"]["data_format"]
+        self.required_data = required_data
+        self.df_type = df_type
+        if self.data_type in ['csv', 'csv.gz']:
+            self.reader_class = SparkCSVDataReader(spark_session, config,
+                                                   required_data, df_type)
+        else:
+            raise NotImplementedError("Only csv data type is supported for now")
+
+    def read_data(self):
+        self.data = self.reader_class.read_data()
+        return self.data
+
+    def get_data(self, variables: Union[List, str]) -> RadarData:
+        return self.data.get_combined_data_by_variable(variables)
+
+    def get_user_data(self, user_id: str) -> RadarData:
+        return self.data.get_data_by_user_id(user_id)
+
+
 class SparkCSVDataReader(DataReader):
     """
     Read CSV data from local directory using pySpark
     """
 
-    def __init__(self, spark_session: ps.SparkSession, config: Dict, required_data: List[str], df_type: str = "pandas"):
+    def __init__(self, spark_session: ps.SparkSession,
+                 config: Dict, required_data: List[str], df_type: str = "pandas"):
         super().__init__(config)
         self.source_formats = {
             # RADAR_OLD: uid/variable/yyyymmdd_hh00.csv.gz
@@ -77,90 +120,12 @@ class SparkCSVDataReader(DataReader):
             "RADAR_NEW": re.compile(r"""^[\w-]+/([\w]+)/
                                     [\d]+/([\d]+.csv.gz$|schema-\1.json$)""", re.X),
         }
-        default_spark_config = {'spark.executor.instances': 6,
-                                'spark.driver.memory': '10G',
-                                'spark.executor.cores': 4,
-                                'spark.executor.memory': '10g',
-                                'spark.memory.offHeap.enabled': True,
-                                'spark.memory.offHeap.size': '20g',
-                                'spark.driver.maxResultSize': '0',
-                                'spark.log.level': "OFF"}
         self.required_data = required_data
         self.df_type = df_type
-        self.source_path = self.config['config'].get("source_path", "")
-        self.spark_config = default_spark_config
+        self.source_path = self.config['input']['config'].get("source_path", "")
         self.schema_reader = AvroSchemaReader()
         self.spark = spark_session
         self.unionByName = partial(DataFrame.unionByName, allowMissingColumns=True)
-
-    def _initialize_spark_session(self) -> ps.SparkSession:
-        """
-        Initializes and returns a SparkSession
-
-        Returns
-        -------
-        SparkSession
-            A SparkSession object
-        """
-
-        """
-        Spark configuration documentation:
-        https://spark.apache.org/docs/latest/configuration.html
-
-        `spark.executor.instances` is the number of executors to
-        launch for an application.
-
-        `spark.executor.cores` is the number of cores to =
-        use on each executor.
-
-        `spark.executor.memory` is the amount of memory to
-        use per executor process.
-
-        `spark.driver.memory` is the amount of memory to use for the driver process,
-        i.e. where SparkContext is initialized, in MiB unless otherwise specified.
-
-        `spark.memory.offHeap.enabled` is to enable off-heap memory allocation
-
-        `spark.memory.offHeap.size` is the absolute amount of memory which can be used
-        for off-heap allocation, in bytes unless otherwise specified.
-
-        `spark.driver.maxResultSize` is the limit of total size of serialized results of
-        all partitions for each Spark action (e.g. collect) in bytes.
-        Should be at least 1M, or 0 for unlimited.
-        """
-        spark = (
-            SparkSession.builder.master("local").appName("radarpipeline")
-            .config('spark.executor.instances',
-                    self.spark_config['spark.executor.instances'])
-            .config('spark.executor.cores',
-                    self.spark_config['spark.executor.cores'])
-            .config('spark.executor.memory',
-                    self.spark_config['spark.executor.memory'])
-            .config('spark.driver.memory',
-                    self.spark_config['spark.driver.memory'])
-            .config('spark.memory.offHeap.enabled',
-                    self.spark_config['spark.memory.offHeap.enabled'])
-            .config('spark.memory.offHeap.size',
-                    self.spark_config['spark.memory.offHeap.size'])
-            .config('spark.driver.maxResultSize',
-                    self.spark_config['spark.driver.maxResultSize'])
-            .config('spark.log.level',
-                    self.spark_config['spark.log.level'])
-            .getOrCreate()
-        )
-        spark._jsc.setLogLevel(self.spark_config['spark.log.level'])
-        spark.sparkContext.setLogLevel("OFF")
-        # Enable Apache Arrow for optimizations in Spark to Pandas conversion
-        spark.conf.set("spark.sql.execution.arrow.pyspark.enabled", "true")
-        # Fallback to use non-Arrow conversion in case of errors
-        spark.conf.set("spark.sql.execution.arrow.pyspark.fallback.enabled", "true")
-        # For further reading:
-        # https://spark.apache.org/docs/3.0.1/sql-pyspark-pandas-with-arrow.html
-        logger.info("Spark Session created")
-        return spark
-
-    def close_spark_session(self):
-        self.spark.stop()
 
     def _get_source_type(self, source_path):
         """
@@ -698,46 +663,3 @@ class AvroSchemaReader(SchemaReader):
                 f"Conflicting types: {spark_data_type_list}. Returning String type."
             )
             return constants.STRING_TYPE
-
-
-class Reader():
-    '''
-    Class for reading data from a file
-    Reader(data_type : str, data_path: str, variables: Union[str, List])
-    reader = Reader(...)
-    reader.get_data(variables=Union[List, str])
-    reader.get_user_data(user_id=..)
-    '''
-    def __init__(self, data_type: str, data_path: str, variables: Union[str, List]):
-        '''
-        Parameters : data_type : str, data_path: str, variables: Union[str, List]
-        data_type : str
-            Type of data to be read
-            Only supports csv for now
-        data_path : str
-            Path to the data directory
-        variables : Union[str, List]
-            List of variables to be read
-        '''
-        self.data_type = data_type
-        self.data_path = data_path
-        # check if variables is a str
-        # If so, convert it to a list
-        if isinstance(variables, str):
-            variables = [variables]
-        self.variables = variables
-        config_dict = {"local_directory": self.data_path}
-        # check if data_type is csv
-        if self.data_type == 'csv':
-            self.reader_class = SparkCSVDataReader(config_dict, self.variables)
-        else:
-            raise NotImplementedError("Only csv data type is supported for now")
-
-    def read_data(self):
-        self.data = self.reader_class.read_data()
-
-    def get_data(self, variables: Union[List, str]) -> RadarData:
-        return self.data.get_combined_data_by_variable(variables)
-
-    def get_user_data(self, user_id: str) -> RadarData:
-        return self.data.get_data_by_user_id(user_id)
