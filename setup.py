@@ -24,8 +24,8 @@ setup(
     packages=find_packages(),
     install_requires=[
         "pyYaml==6.0",
-        "pandas==1.4.1",
-        "numpy==1.22.3",
+        "pandas==2.0.3",
+        "numpy==1.24.4",
         "scipy==1.10.0",
         "pyspark[sql]==3.5.0",
         "GitPython>=3.1.41",
