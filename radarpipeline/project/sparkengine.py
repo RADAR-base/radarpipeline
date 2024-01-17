@@ -13,7 +13,7 @@ class SparkEngine():
     Read CSV data from local directory using pySpark
     """
 
-    def __init__(self, spark_config: Dict = {}):
+    def __init__(self, spark_config: Dict = None):
         default_spark_config = {'spark.executor.instances': 6,
                                 'spark.driver.memory': '10G',
                                 'spark.executor.cores': 4,

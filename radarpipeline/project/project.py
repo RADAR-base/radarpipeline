@@ -243,14 +243,14 @@ class Project:
             if not os.path.exists(cache_dir):
                 Repo.clone_from(MOCK_URL, cache_dir)
             mock_data_directory = os.path.join(cache_dir, "mockdata")
-            mock_config_input = {
-                "config": {
-                    "source_path": mock_data_directory
-                }
-            }
+            mock_config = {
+                "input": {
+                    "config": {
+                        "source_path": mock_data_directory},
+                    "data_format": "csv"}}
             datareader = Reader(
                 self.spark_session,
-                mock_config_input,
+                mock_config,
                 self.total_required_data,
                 self.config["configurations"]["df_type"],
             )

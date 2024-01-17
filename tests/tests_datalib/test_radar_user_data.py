@@ -1,16 +1,19 @@
 from radarpipeline.datalib import RadarVariableData, RadarUserData
+from radarpipeline.common.utils import PySparkTestCase
 import unittest
 import os
 import pandas as pd
-from pandas.testing import assert_frame_equal
+from pyspark.testing import assertDataFrameEqual
 
 
-class TestRadarUserData(unittest.TestCase):
+class TestRadarUserData(PySparkTestCase):
     def setUp(self):
-        PANDAS_MOCK_PATH = ("tests/resources/test_data/test_participant/"
+        MOCK_PATH = ("tests/resources/test_data/test_participant/"
                             "android_phone_step_count/0000_11.csv.gz")
-        self.mock_pandas = pd.read_csv(PANDAS_MOCK_PATH)
-        self.radar_variable_data = RadarVariableData(self.mock_pandas)
+        self.mock_df = self.spark.read.csv(MOCK_PATH,
+                                           header=True,
+                                           inferSchema=True)
+        self.radar_variable_data = RadarVariableData(self.mock_df)
         self.radar_user_data = RadarUserData({"test_variable_data":
                                               self.radar_variable_data})
 

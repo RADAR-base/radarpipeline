@@ -2,15 +2,21 @@ from radarpipeline.datalib import RadarVariableData, RadarUserData, RadarData
 import unittest
 import os
 import pandas as pd
+from radarpipeline.common.utils import PySparkTestCase
+import pyspark.sql.functions as f
+from pyspark.sql.types import TimestampType
 from pandas.testing import assert_frame_equal
 
 
-class TestRadarData(unittest.TestCase):
+class TestRadarData(PySparkTestCase):
+
     def setUp(self):
-        PANDAS_MOCK_PATH = ("tests/resources/test_data/test_participant/"
-                            "android_phone_step_count/0000_11.csv.gz")
-        self.mock_pandas = pd.read_csv(PANDAS_MOCK_PATH)
-        self.radar_variable_data = RadarVariableData(self.mock_pandas)
+        MOCK_PATH = ("tests/resources/test_data/test_participant/"
+                     "android_phone_step_count/0000_11.csv.gz")
+        self.mock_df = self.spark.read.csv(MOCK_PATH,
+                                           header=True,
+                                           inferSchema=True)
+        self.radar_variable_data = RadarVariableData(self.mock_df)
         self.radar_user_data = RadarUserData({"test_variable_data":
                                               self.radar_variable_data})
         self.radar_data = RadarData({"test_user_data": self.radar_user_data})
@@ -33,6 +39,8 @@ class TestRadarData(unittest.TestCase):
         self.assertEqual(self.radar_data._get_all_user_ids(), ["test_user_data"])
 
     def test_get_combined_data_by_variable(self):
+        self.mock_df = self.preprocess_data(self.mock_df)
+        self.mock_pandas = self.mock_df.toPandas()
         assert_frame_equal(self.radar_data.get_combined_data_by_variable(
             "test_variable_data"),
             self.mock_pandas)

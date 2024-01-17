@@ -71,6 +71,7 @@ class TestProject(unittest.TestCase):
         self.assertListEqual(sorted(required_data_output), sorted(expected_data))
 
     def tearDown(self) -> None:
+        self.project.close_spark_session()
         del self.project
 
 
