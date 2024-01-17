@@ -9,7 +9,7 @@ from pyspark.testing import assertDataFrameEqual
 class TestRadarUserData(PySparkTestCase):
     def setUp(self):
         MOCK_PATH = ("tests/resources/test_data/test_participant/"
-                            "android_phone_step_count/0000_11.csv.gz")
+                     "android_phone_step_count/0000_11.csv.gz")
         self.mock_df = self.spark.read.csv(MOCK_PATH,
                                            header=True,
                                            inferSchema=True)

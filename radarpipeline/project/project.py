@@ -228,7 +228,7 @@ class Project:
         """
 
         if self.config["input"]["data_type"] == "local":
-            datareader= Reader(
+            datareader = Reader(
                 self.spark_session,
                 self.config,
                 self.total_required_data,
