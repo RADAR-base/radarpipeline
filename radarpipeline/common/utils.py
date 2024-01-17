@@ -294,5 +294,4 @@ class PySparkTestCase(unittest.TestCase):
         cls.spark_engine.close_spark_session()
 
     def preprocess_data(self, data):
-        preprocess_time_data(data)
-        return data
+        return preprocess_time_data(data)
