@@ -30,7 +30,7 @@ setup(
         "pyspark[sql]==3.5.0",
         "GitPython>=3.1.32",
         "strictyaml==1.7.3",
-        "paramiko==3.1.0",
+        "paramiko==3.4.0",
         "avro==1.11.2"],
     test_suite="tests",
     include_package_data=True,
