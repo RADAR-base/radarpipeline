@@ -5,6 +5,7 @@ import pyspark.sql.functions as f
 from pyspark.sql.types import TimestampType
 
 from radarpipeline.datalib.abc import Data
+from radarpipeline.common.utils import preprocess_time_data
 from radarpipeline.datatypes import DataType
 
 logger = logging.getLogger(__name__)
@@ -39,12 +40,6 @@ class RadarVariableData(Data):
         Converts all time value columns to datetime format
         """
         try:
-            time_cols = ["value.time", "value.timeReceived", "value.dateTime"]
-            for i, col in enumerate(time_cols):
-                if col in self._data.columns:
-                    self._data = self._data.withColumn(col, self._data[f"`{col}`"]
-                                                       .cast(TimestampType()))
-                    self._data.withColumn(col, f.from_unixtime(
-                        f.unix_timestamp(f"`{col}`")))
+            self._data = preprocess_time_data(self._data)
         except ValueError:
             logger.warning("Unable to convert time columns to datetime format")

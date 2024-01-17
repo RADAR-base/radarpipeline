@@ -273,6 +273,16 @@ def get_hash(array : List) -> int:
     return hash(tuple(array))
 
 
+def preprocess_time_data(data):
+    time_cols = ["value.time", "value.timeReceived", "value.dateTime"]
+    for i, col in enumerate(time_cols):
+        if col in data.columns:
+            data = data.withColumn(col, data[f"`{col}`"].cast(TimestampType()))
+            data.withColumn(col, f.from_unixtime(
+                f.unix_timestamp(f"`{col}`")))
+    return data
+
+
 class PySparkTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -284,10 +294,5 @@ class PySparkTestCase(unittest.TestCase):
         cls.spark_engine.close_spark_session()
 
     def preprocess_data(self, data):
-        time_cols = ["value.time", "value.timeReceived", "value.dateTime"]
-        for i, col in enumerate(time_cols):
-            if col in data.columns:
-                data = data.withColumn(col, data[f"`{col}`"].cast(TimestampType()))
-                data.withColumn(col, f.from_unixtime(
-                    f.unix_timestamp(f"`{col}`")))
+        preprocess_time_data(data)
         return data
