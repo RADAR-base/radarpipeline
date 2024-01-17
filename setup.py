@@ -27,7 +27,7 @@ setup(
         "pandas==1.4.1",
         "numpy==1.22.3",
         "scipy==1.10.0",
-        "pyspark[sql]==3.3.0",
+        "pyspark[sql]==3.5.0",
         "GitPython>=3.1.32",
         "strictyaml==1.7.3",
         "paramiko==3.1.0",
