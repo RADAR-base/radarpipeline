@@ -28,7 +28,7 @@ setup(
         "numpy==1.22.3",
         "scipy==1.10.0",
         "pyspark[sql]==3.5.0",
-        "GitPython>=3.1.32",
+        "GitPython>=3.1.41",
         "strictyaml==1.7.3",
         "paramiko==3.4.0",
         "avro==1.11.2"],
