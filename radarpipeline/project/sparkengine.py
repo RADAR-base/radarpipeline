@@ -88,6 +88,7 @@ class SparkEngine():
         # Fallback to use non-Arrow conversion in case of errors
         self.spark.conf.set("spark.sql.execution.arrow.pyspark.fallback.enabled",
                             "true")
+        self.spark.conf.set("spark.sql.session.timeZone", "UTC")
         # For further reading:
         # https://spark.apache.org/docs/3.0.1/sql-pyspark-pandas-with-arrow.html
         logger.info("Spark Session created")
