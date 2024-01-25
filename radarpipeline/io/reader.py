@@ -233,9 +233,14 @@ class SparkCSVDataReader(DataReader):
                 dfs.append(df)
 
         # Spark Join all the dfs
-        df = reduce(self.unionByName, dfs)
-        variable_data = RadarVariableData(df, self.df_type)
-
+        # check if dfs are empty
+        if len(dfs) == 0:
+            # creating empty spark df
+            df = self.spark.createDataFrame([], schema=schema.get_schema())
+            variable_data = RadarVariableData(df, self.df_type)
+        else:
+            df = reduce(self.unionByName, dfs)
+            variable_data = RadarVariableData(df, self.df_type)
         return variable_data
 
     def _read_data_from_old_format(self, source_path: str, user_data_dict: dict):
