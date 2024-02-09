@@ -248,6 +248,7 @@ class Project:
                     "config": {
                         "source_path": mock_data_directory},
                     "data_format": "csv"}}
+            mock_config["configurations"] = self.config["configurations"]
             datareader = Reader(
                 self.spark_session,
                 mock_config,

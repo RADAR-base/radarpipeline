@@ -108,11 +108,84 @@ class ConfigValidator():
             self.config["configurations"] = {}
 
         valid_df_types = ["pandas", "spark"]
+        valid_user_sampling_methods = ["fraction", "count", "userid"]
 
         if "df_type" not in self.config["configurations"]:
             self.config["configurations"]["df_type"] = "pandas"
         elif self.config["configurations"]["df_type"] not in valid_df_types:
             raise ValueError("Invalid value for the key: df_type")
+        if "user_sampling" in self.config["configurations"]:
+            if "method" not in self.config["configurations"]["user_sampling"]:
+                raise ValueError("Key not present in the user_sampling config: method")
+            elif (
+                self.config["configurations"]["user_sampling"]["method"]
+                not in valid_user_sampling_methods
+            ):
+                raise ValueError("Invalid value for the key: method")
+            else:
+                self.config["configurations"]["user_sampling"] = self._validate_user_sampling_config(self.config["configurations"]["user_sampling"])
+        else:
+            self.config["configurations"]["user_sampling"] = None
+
+    def _validate_user_sampling_config(self, user_sampling_config):
+        """
+        Validates the user_sampling config
+        """
+
+        if user_sampling_config["method"] == "fraction":
+            if "config" not in user_sampling_config:
+                raise ValueError("Key not present in the user_sampling config: config")
+            if "fraction" not in user_sampling_config["config"]:
+                raise ValueError(
+                    "Key not present in the user_sampling config: fraction"
+                )
+            # converting fraction to float
+            try:
+                user_sampling_config["config"]["fraction"] = float(
+                    user_sampling_config["config"]["fraction"]
+                )
+            except ValueError:
+                raise ValueError(
+                    "Invalid value for the key: fraction. It should be a number"
+                )
+            if not 0 < user_sampling_config["config"]["fraction"] <= 1:
+                raise ValueError(
+                    "Invalid value for the key: fraction. It should be between 0 and 1"
+                )
+
+        elif user_sampling_config["method"] == "count":
+            if "config" not in user_sampling_config:
+                raise ValueError("Key not present in the user_sampling config: config")
+            if "count" not in user_sampling_config["config"]:
+                raise ValueError("Key not present in the user_sampling config: count")
+            try:
+                user_sampling_config["config"]["count"] = int(
+                    user_sampling_config["config"]["count"]
+                )
+            except ValueError:
+                raise ValueError(
+                    "Invalid value for the key: count. It should be a number"
+                )
+            if user_sampling_config["config"]["count"] <= 0:
+                raise ValueError(
+                    "Invalid value for the key: count. It should be greater than 0"
+                )
+
+        elif user_sampling_config["method"] == "userid":
+            if "config" not in user_sampling_config:
+                raise ValueError("Key not present in the user_sampling config: config")
+            if "userids" not in user_sampling_config["config"]:
+                raise ValueError("Key not present in the user_sampling config: userids")
+            if len(user_sampling_config["config"]["userids"]) == 0:
+                raise ValueError(
+                    "user_ids array cannot be empty in the user_sampling config"
+                )
+            # check if userids are in array. If not convert to array
+            if not isinstance(user_sampling_config["config"]["userids"], list):
+                user_sampling_config["config"]["userids"] = [
+                    user_sampling_config["config"]["userids"]
+                ]
+        return user_sampling_config
 
     def _validate_features(self) -> None:
         """
