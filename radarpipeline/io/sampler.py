@@ -33,3 +33,12 @@ class UserSampler(Sampler):
 
     def _sample_list(self, uid_list, number):
         return sample(uid_list, number)
+
+
+class DataSampler(Sampler):
+    def __init__(self, config: Dict) -> None:
+        super().__init__(config)
+
+    def sample_data(self, df):
+        # TODO: Implement this
+        return df

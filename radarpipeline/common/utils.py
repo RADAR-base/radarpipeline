@@ -157,8 +157,12 @@ def get_yaml_schema() -> Map:
             "df_type": Str(),
             Optional("user_sampling"): Map({
                 "method": Str(),
-                "config": MapPattern(Str(), Seq(Str()) or Str())
-            })
+                "config": MapPattern(Str(), Seq(Str()) | Str()),
+            }),
+            Optional("data_sampling"): Map({
+                "method": Str(),
+                "config": MapPattern(Str(), Str()),
+            }),
         }),
         "features": Seq(Map({
             "location": Str(),

@@ -25,11 +25,11 @@ input:
 
 configurations:
     df_type: 'pandas'
-    #user_sampling:
+    user_sampling:
         ## Possible methods: fraction, count, userid
-        #method: fraction
-        #config:
-        #    fraction: 0.3
+        method: fraction
+        config:
+            fraction: 0.8
         #method: count
         #config:
         #    count: 2
@@ -40,7 +40,16 @@ configurations:
     ## TODO: For future
     #data_sampling:
         ## Possible methods:  time, count, fraction
-    #    method: range_time
+    #    method: time
+    #    config:
+    #       starttime:
+    #       endtime:
+    #    method: count
+    #    config:
+    #       count: 100
+    #    method: fraction
+    #    config:
+    #       fraction: 0.3
 
 features:
     - location: 'https://github.com/RADAR-base-Analytics/mockfeatures'
