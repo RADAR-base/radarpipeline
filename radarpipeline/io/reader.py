@@ -88,7 +88,7 @@ class Reader():
             self.user_sampler = UserSampler(self.config["configurations"]
                                             ['user_sampling'])
         if self.config["configurations"]['data_sampling'] is None:
-            self.data_sampling = None
+            self.data_sampler = None
         else:
             self.data_sampler = DataSampler(self.config["configurations"]
                                             ['data_sampling'])
@@ -256,7 +256,8 @@ class SparkCSVDataReader(DataReader):
             variable_data = RadarVariableData(df, self.df_type)
         else:
             df = reduce(self.unionByName, dfs)
-            self.data_sampler.sample_data(df)
+            if self.data_sampler is not None:
+                self.data_sampler.sample_data(df)
             variable_data = RadarVariableData(df, self.df_type)
         return variable_data
 
