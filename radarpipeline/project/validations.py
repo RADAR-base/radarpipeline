@@ -353,4 +353,14 @@ class ConfigValidator():
             raise ValueError("Neither startime nor endtime present in the config")
         # check if starttime and endtime are can be converted into time format
         # if so, convert them
+        if "starttime" in sampling_config["config"]:
+            sampling_config["config"]['starttime'] = utils.convert_str_to_time(
+                sampling_config["config"]['starttime'])
+        if "endtime" in sampling_config["config"]:
+            sampling_config["config"]['endtime'] = utils.convert_str_to_time(
+                sampling_config["config"]['endtime'])
+        if "time_column" not in sampling_config["config"]:
+            logger.warning("time_column not present in the config. \
+                Using default time column: value.time")
+            sampling_config["config"]["time_column"] = "value.time"
         return sampling_config

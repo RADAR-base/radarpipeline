@@ -18,10 +18,13 @@ class RadarVariableData(Data):
 
     _data: DataType
 
-    def __init__(self, data: DataType, df_type: str = "pandas") -> None:
+    def __init__(self, data: DataType, df_type: str = "pandas",
+                 data_sampler=None) -> None:
         self._data = data
         self.df_type = df_type
         self._preprocess_data()
+        if data_sampler is not None:
+            self._data = data_sampler.sample_data(self._data)
 
     def get_data(self) -> DataType:
         return self._data

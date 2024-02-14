@@ -39,6 +39,34 @@ class DataSampler(Sampler):
     def __init__(self, config: Dict) -> None:
         super().__init__(config)
 
-    def sample_data(self, df):
-        # TODO: Implement this
-        return df
+    def sample_data(self, df: ps.DataFrame) -> Optional[ps.DataFrame]:
+        if self.config['method'] == "fraction":
+            fraction = self.config['config']['fraction']
+            # sample fraction of the data
+            return self._sample_data(df, fraction)
+        elif self.config['method'] == "count":
+            count = self.config['config']['count']
+            # sample count of the data
+            return self._sample_data(df, count / df.count())
+        elif self.config['method'] == "time":
+            starttime = self.config['config'].get('starttime', None)
+            endtime = self.config['config'].get('endtime', None)
+            time_col = self.config['config'].get('time_col', "value.time")
+            # check if time_col is present in df
+            if time_col not in df.columns:
+                raise ValueError(f"Column {time_col} not found in the dataframe")
+            return self._sample_data_by_time(df, starttime, endtime, time_col)
+
+        else:
+            raise ValueError("Invalid method")
+
+    def _sample_data(self, df, fraction):
+        return df.sample(fraction=fraction, withReplacement=True)
+
+    def _sample_data_by_time(self, df, starttime, endtime, time_col):
+        if endtime is None:
+            return df.filter(df[f"`{time_col}`"] >= starttime)
+        elif starttime is None:
+            return df.filter(df[f"`{time_col}`"] < endtime)
+        else:
+            return df.filter(df[f"`{time_col}`"].between(starttime, endtime))

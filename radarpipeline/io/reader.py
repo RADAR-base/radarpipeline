@@ -256,9 +256,8 @@ class SparkCSVDataReader(DataReader):
             variable_data = RadarVariableData(df, self.df_type)
         else:
             df = reduce(self.unionByName, dfs)
-            if self.data_sampler is not None:
-                self.data_sampler.sample_data(df)
-            variable_data = RadarVariableData(df, self.df_type)
+            variable_data = RadarVariableData(df, self.df_type,
+                                              data_sampler=self.data_sampler)
         return variable_data
 
     def _read_data_from_old_format(self, source_path: str, user_data_dict: dict):

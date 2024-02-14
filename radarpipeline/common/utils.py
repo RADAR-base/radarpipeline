@@ -10,6 +10,7 @@ import requests
 import yaml
 from strictyaml import load, Map, Int, Str, Seq, Bool, Optional
 from strictyaml import YAMLError, CommaSeparated, MapPattern
+from dateutil import parser
 
 import ntpath
 import posixpath
@@ -290,6 +291,15 @@ def preprocess_time_data(data):
             data.withColumn(col, f.from_unixtime(
                 f.unix_timestamp(f"`{col}`")))
     return data
+
+
+def convert_str_to_time(time):
+    try:
+        return parser.parse(time)
+    except ValueError:
+        raise ValueError(
+            "Invalid value for the key: time. It should be a valid time format"
+        )
 
 
 class PySparkTestCase(unittest.TestCase):

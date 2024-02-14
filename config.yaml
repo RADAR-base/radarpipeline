@@ -25,11 +25,11 @@ input:
 
 configurations:
     df_type: 'pandas'
-    user_sampling:
+    #user_sampling:
         ## Possible methods: fraction, count, userid
-        method: fraction
-        config:
-            fraction: 0.8
+    #    method: fraction
+    #    config:
+    #        fraction: 0.8
         #method: count
         #config:
         #    count: 2
@@ -40,16 +40,18 @@ configurations:
     ## TODO: For future
     #data_sampling:
         ## Possible methods:  time, count, fraction
-    #    method: time
-    #    config:
-    #       starttime:
-    #       endtime:
-    #    method: count
-    #    config:
-    #       count: 100
-    #    method: fraction
-    #    config:
-    #       fraction: 0.3
+        ## starttime and endtime format is dd-mm-yyyy hh:mm:ss in UTC timezone
+        #method: time
+        #config:
+        #   starttime: 2018-11-25 00:00:00
+        #   endtime:  2018-11-29 00:00:00
+        #   time_column: value.time
+        #method: count
+        #config:
+        #   count: 100
+        #method: fraction
+        #config:
+        #   fraction: 0.3
 
 features:
     - location: 'https://github.com/RADAR-base-Analytics/mockfeatures'
