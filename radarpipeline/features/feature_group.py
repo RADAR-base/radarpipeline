@@ -65,7 +65,7 @@ class FeatureGroup(ABC):
         feature_values = []
         preprocessed_data = self.preprocess(data)
         for feature in self.features:
-            print(feature.name)
+            logger.info(f"Computing feature {feature.name}")
             feature_names.append(feature.name)
             preprocessed_feature = feature.preprocess(preprocessed_data)
             feature_values.append(feature.calculate(preprocessed_feature))

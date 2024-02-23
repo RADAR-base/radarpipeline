@@ -15,6 +15,10 @@ import ntpath
 import posixpath
 
 from radarpipeline.common import constants
+import unittest
+from radarpipeline.project.sparkengine import SparkEngine
+import pyspark.sql.functions as f
+from pyspark.sql.types import TimestampType
 
 
 def read_yaml(yaml_file_path: str) -> Dict[str, Any]:
@@ -250,3 +254,45 @@ def get_write_file_attr(feature_name, output_dir, data_format, compression):
         raise ValueError(f"Invalid data format {data_format} specified \
             for spark writer")
     return file_path
+
+
+def get_hash(array : List) -> int:
+    """
+    Returns the hash of the array
+
+    Parameters
+    ----------
+    array : list
+        List of values
+
+    Returns
+    -------
+    str
+        Hash of the array
+    """
+    return hash(tuple(array))
+
+
+def preprocess_time_data(data):
+    time_cols = ["value.time", "value.timeReceived", "value.dateTime",
+                 "value.timeCompleted", "value.timeNotification"]
+    for i, col in enumerate(time_cols):
+        if col in data.columns:
+            data = data.withColumn(col, data[f"`{col}`"].cast(TimestampType()))
+            data.withColumn(col, f.from_unixtime(
+                f.unix_timestamp(f"`{col}`")))
+    return data
+
+
+class PySparkTestCase(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.spark_engine = SparkEngine()
+        cls.spark = cls.spark_engine.initialize_spark_session()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.spark_engine.close_spark_session()
+
+    def preprocess_data(self, data):
+        return preprocess_time_data(data)

@@ -2,29 +2,28 @@ import json
 import logging
 import os
 from glob import glob
+import gzip
 import re
 from typing import Any, Dict, List, Optional, Union
 
 import pyspark.sql as ps
-from pyspark.sql import SparkSession
+from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql.types import StructField, StructType
 from pyspark.sql.utils import IllegalArgumentException
 
 from radarpipeline.common import constants
 from radarpipeline.datalib import RadarData, RadarUserData, RadarVariableData
 from radarpipeline.io.abc import DataReader, SchemaReader
+from radarpipeline.common.utils import get_hash
 
 import avro
 from avro.datafile import DataFileReader, DataFileWriter
 from avro.io import DatumReader, DatumWriter
 from avro.schema import RecordSchema, Field, PrimitiveSchema, UnionSchema, Schema
-
-from multiprocessing import Pool
-from functools import partial
 from datetime import datetime
 
 from collections import Counter
-
+from functools import reduce, partial
 
 logger = logging.getLogger(__name__)
 
@@ -33,27 +32,70 @@ class Schemas(object):
     def __init__(self, original_schema, original_schema_keys):
         self.original_schema = original_schema
         self.original_schema_hash = self._get_schema_hash(original_schema_keys)
-        self.counterdict = Counter({self.original_schema_hash: 1})
         self.hashdict = {self.original_schema_hash: original_schema}
 
     def _get_schema_hash(self, schema_keys):
-        return hash(frozenset(schema_keys))
+        return get_hash(schema_keys)
 
     def is_original_schema(self, schema_keys):
         return self._get_schema_hash(schema_keys) == self.original_schema_hash
 
-    def get_schema(self):
-        most_freq_schema_hash = self.counterdict.most_common(1)[0][0]
-        return self.hashdict[most_freq_schema_hash]
+    def is_schema_present(self, schema_keys):
+        return self._get_schema_hash(schema_keys) in self.hashdict
+
+    def is_schema_hash_present(self, schema_hash):
+        return schema_hash in self.hashdict
+
+    def get_schema(self, schema_keys=None):
+        if schema_keys is None:
+            return self.original_schema
+        return self.hashdict[self._get_schema_hash(schema_keys)]
+
+    def get_schema_by_hash(self, schema_hash):
+        return self.hashdict[schema_hash]
 
     def add_schema(self, schema_keys, schema):
         schema_hash = self._get_schema_hash(schema_keys)
-        if schema_hash not in self.hashdict:
-            self.hashdict[schema_hash] = schema
-        self.counterdict[schema_hash] += 1
+        self.hashdict[schema_hash] = schema
 
-    def update_schema_counter(self, schema_keys):
-        self.counterdict[self._get_schema_hash(schema_keys)] += 1
+
+class Reader():
+    '''
+    Class for reading data from a file
+    Reader(data_type : str, data_path: str, variables: Union[str, List])
+    reader = Reader(...)
+    reader.get_data(variables=Union[List, str])
+    reader.get_user_data(user_id=..)
+    '''
+    def __init__(self, spark_session: ps.SparkSession,
+                 config: Dict, required_data: List[str], df_type: str = "pandas"):
+        """_summary_
+
+        Args:
+            spark_session (ps.SparkSession): spark session instance
+            config (Dict): Configuration data from the config.yaml file
+            required_data (List[str]): List of required data
+            df_type (str, optional): Type of dataframe format. Defaults to "pandas".
+        """
+        self.config = config
+        self.data_type = self.config["input"]["data_format"]
+        self.required_data = required_data
+        self.df_type = df_type
+        if self.data_type in ['csv', 'csv.gz']:
+            self.reader_class = SparkCSVDataReader(spark_session, config,
+                                                   required_data, df_type)
+        else:
+            raise NotImplementedError("Only csv data type is supported for now")
+
+    def read_data(self):
+        self.data = self.reader_class.read_data()
+        return self.data
+
+    def get_data(self, variables: Union[List, str]) -> RadarData:
+        return self.data.get_combined_data_by_variable(variables)
+
+    def get_user_data(self, user_id: str) -> RadarData:
+        return self.data.get_data_by_user_id(user_id)
 
 
 class SparkCSVDataReader(DataReader):
@@ -61,8 +103,8 @@ class SparkCSVDataReader(DataReader):
     Read CSV data from local directory using pySpark
     """
 
-    def __init__(self, config: Dict, required_data: List[str], df_type: str = "pandas",
-                 spark_config: Dict = {}):
+    def __init__(self, spark_session: ps.SparkSession,
+                 config: Dict, required_data: List[str], df_type: str = "pandas"):
         super().__init__(config)
         self.source_formats = {
             # RADAR_OLD: uid/variable/yyyymmdd_hh00.csv.gz
@@ -72,91 +114,12 @@ class SparkCSVDataReader(DataReader):
             "RADAR_NEW": re.compile(r"""^[\w-]+/([\w]+)/
                                     [\d]+/([\d]+.csv.gz$|schema-\1.json$)""", re.X),
         }
-        default_spark_config = {'spark.executor.instances': 6,
-                                'spark.driver.memory': '10G',
-                                'spark.executor.cores': 4,
-                                'spark.executor.memory': '10g',
-                                'spark.memory.offHeap.enabled': True,
-                                'spark.memory.offHeap.size': '20g',
-                                'spark.driver.maxResultSize': '0',
-                                'spark.log.level': "OFF"}
         self.required_data = required_data
         self.df_type = df_type
-        self.source_path = self.config['config'].get("source_path", "")
-        self.spark_config = default_spark_config
+        self.source_path = self.config['input']['config'].get("source_path", "")
         self.schema_reader = AvroSchemaReader()
-        if spark_config is not None:
-            self.spark_config.update(spark_config)
-        self.spark = self._initialize_spark_session()
-
-    def _initialize_spark_session(self) -> ps.SparkSession:
-        """
-        Initializes and returns a SparkSession
-
-        Returns
-        -------
-        SparkSession
-            A SparkSession object
-        """
-
-        """
-        Spark configuration documentation:
-        https://spark.apache.org/docs/latest/configuration.html
-
-        `spark.executor.instances` is the number of executors to
-        launch for an application.
-
-        `spark.executor.cores` is the number of cores to =
-        use on each executor.
-
-        `spark.executor.memory` is the amount of memory to
-        use per executor process.
-
-        `spark.driver.memory` is the amount of memory to use for the driver process,
-        i.e. where SparkContext is initialized, in MiB unless otherwise specified.
-
-        `spark.memory.offHeap.enabled` is to enable off-heap memory allocation
-
-        `spark.memory.offHeap.size` is the absolute amount of memory which can be used
-        for off-heap allocation, in bytes unless otherwise specified.
-
-        `spark.driver.maxResultSize` is the limit of total size of serialized results of
-        all partitions for each Spark action (e.g. collect) in bytes.
-        Should be at least 1M, or 0 for unlimited.
-        """
-        spark = (
-            SparkSession.builder.master("local").appName("radarpipeline")
-            .config('spark.executor.instances',
-                    self.spark_config['spark.executor.instances'])
-            .config('spark.executor.cores',
-                    self.spark_config['spark.executor.cores'])
-            .config('spark.executor.memory',
-                    self.spark_config['spark.executor.memory'])
-            .config('spark.driver.memory',
-                    self.spark_config['spark.driver.memory'])
-            .config('spark.memory.offHeap.enabled',
-                    self.spark_config['spark.memory.offHeap.enabled'])
-            .config('spark.memory.offHeap.size',
-                    self.spark_config['spark.memory.offHeap.size'])
-            .config('spark.driver.maxResultSize',
-                    self.spark_config['spark.driver.maxResultSize'])
-            .config('spark.log.level',
-                    self.spark_config['spark.log.level'])
-            .getOrCreate()
-        )
-        spark._jsc.setLogLevel(self.spark_config['spark.log.level'])
-        spark.sparkContext.setLogLevel("OFF")
-        # Enable Apache Arrow for optimizations in Spark to Pandas conversion
-        spark.conf.set("spark.sql.execution.arrow.pyspark.enabled", "true")
-        # Fallback to use non-Arrow conversion in case of errors
-        spark.conf.set("spark.sql.execution.arrow.pyspark.fallback.enabled", "true")
-        # For further reading:
-        # https://spark.apache.org/docs/3.0.1/sql-pyspark-pandas-with-arrow.html
-        logger.info("Spark Session created")
-        return spark
-
-    def close_spark_session(self):
-        self.spark.stop()
+        self.spark = spark_session
+        self.unionByName = partial(DataFrame.unionByName, allowMissingColumns=True)
 
     def _get_source_type(self, source_path):
         """
@@ -199,6 +162,19 @@ class SparkCSVDataReader(DataReader):
                     source_path_item, user_data_dict)
         return radar_data
 
+    def _filter_files_by_headers(self, data_files):
+        file_dict = {}
+        for file in data_files:
+            with gzip.open(file, 'rb') as f:
+                columns = f.readline().decode("utf-8").split(",")
+                f.close()
+            column_hash = get_hash(columns)
+            if column_hash in file_dict:
+                file_dict[column_hash].append(file)
+            else:
+                file_dict[column_hash] = [file]
+        return file_dict
+
     def _read_variable_data_files(
         self,
         data_files: List[str],
@@ -220,44 +196,51 @@ class SparkCSVDataReader(DataReader):
         RadarVariableData
             A RadarVariableData object containing all the read data
         """
+        dfs = []
+        file_dict = self._filter_files_by_headers(data_files)
         if schema:
-            df = self.spark.read.load(
-                data_files,
-                format="csv",
-                header=True,
-                schema=schema.get_schema(),
-                enforceSchema="false",
-                encoding=constants.ENCODING,
-            )
+            for column_hash in file_dict.keys():
+                if schema.is_schema_hash_present(column_hash):
+                    df = self.spark.read.load(
+                        file_dict[column_hash],
+                        format="csv",
+                        header=True,
+                        schema=schema.get_schema_by_hash(column_hash),
+                        enforceSchema="false",
+                        encoding=constants.ENCODING,
+                    )
+                    dfs.append(df)
+                else:
+                    df = self.spark.read.load(
+                        file_dict[column_hash],
+                        format="csv",
+                        header=True,
+                        inferSchema="true",
+                        encoding=constants.ENCODING,
+                    )
+                    inferred_schema = df.schema
+                    schema.add_schema(df.columns, inferred_schema)
+                    dfs.append(df)
         else:
-            df = self.spark.read.load(
-                data_files,
-                format="csv",
-                header=True,
-                inferSchema="true",
-                encoding=constants.ENCODING,
-            )
-
-        if self.df_type == "pandas":
-            try:
-                df = df.toPandas()
-                schema.update_schema_counter(df.columns)
-            except Exception:
-                logger.warning("Failed to convert to pandas dataframe. "
-                               "inferring schema")
+            for column_hash in file_dict:
                 df = self.spark.read.load(
-                    data_files,
+                    file_dict[column_hash],
                     format="csv",
                     header=True,
                     inferSchema="true",
                     encoding=constants.ENCODING,
                 )
-                inferred_schema = df.schema
-                schema.add_schema(df.columns, inferred_schema)
-                df = df.toPandas()
+                dfs.append(df)
 
-        variable_data = RadarVariableData(df, self.df_type)
-
+        # Spark Join all the dfs
+        # check if dfs are empty
+        if len(dfs) == 0:
+            # creating empty spark df
+            df = self.spark.createDataFrame([], schema=schema.get_schema())
+            variable_data = RadarVariableData(df, self.df_type)
+        else:
+            df = reduce(self.unionByName, dfs)
+            variable_data = RadarVariableData(df, self.df_type)
         return variable_data
 
     def _read_data_from_old_format(self, source_path: str, user_data_dict: dict):
@@ -387,17 +370,17 @@ class AvroSchemaReader(SchemaReader):
         schema_file = os.path.join(
             schema_dir, f"schema-{schema_dir_base}.json"
         )
-        schema_dict = json.load(
+        schema_content = json.load(
             open(
                 schema_file,
                 "r",
                 encoding=constants.ENCODING,
             )
         )
-        avro_schema = avro.schema.parse(json.dumps(schema_dict))
-        schema_dict = self._recursive_schema_loader(avro_schema)
+        avro_schema = avro.schema.parse(json.dumps(schema_content))
+        schema_content_dict = self._recursive_schema_loader(avro_schema)
 
-        schema, schema_keys = self._to_structtype(schema_dict)
+        schema, schema_keys = self._to_structtype(schema_content_dict)
         return schema, schema_keys
 
     def _add_new_schema(self, schema_dir_base, schema):
@@ -679,46 +662,3 @@ class AvroSchemaReader(SchemaReader):
                 f"Conflicting types: {spark_data_type_list}. Returning String type."
             )
             return constants.STRING_TYPE
-
-
-class Reader():
-    '''
-    Class for reading data from a file
-    Reader(data_type : str, data_path: str, variables: Union[str, List])
-    reader = Reader(...)
-    reader.get_data(variables=Union[List, str])
-    reader.get_user_data(user_id=..)
-    '''
-    def __init__(self, data_type: str, data_path: str, variables: Union[str, List]):
-        '''
-        Parameters : data_type : str, data_path: str, variables: Union[str, List]
-        data_type : str
-            Type of data to be read
-            Only supports csv for now
-        data_path : str
-            Path to the data directory
-        variables : Union[str, List]
-            List of variables to be read
-        '''
-        self.data_type = data_type
-        self.data_path = data_path
-        # check if variables is a str
-        # If so, convert it to a list
-        if isinstance(variables, str):
-            variables = [variables]
-        self.variables = variables
-        config_dict = {"local_directory": self.data_path}
-        # check if data_type is csv
-        if self.data_type == 'csv':
-            self.reader_class = SparkCSVDataReader(config_dict, self.variables)
-        else:
-            raise NotImplementedError("Only csv data type is supported for now")
-
-    def read_data(self):
-        self.data = self.reader_class.read_data()
-
-    def get_data(self, variables: Union[List, str]) -> RadarData:
-        return self.data.get_combined_data_by_variable(variables)
-
-    def get_user_data(self, user_id: str) -> RadarData:
-        return self.data.get_data_by_user_id(user_id)

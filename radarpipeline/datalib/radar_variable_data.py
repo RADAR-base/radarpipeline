@@ -2,8 +2,10 @@ from typing import List
 import logging
 import pandas as pd
 import pyspark.sql.functions as f
+from pyspark.sql.types import TimestampType
 
 from radarpipeline.datalib.abc import Data
+from radarpipeline.common.utils import preprocess_time_data
 from radarpipeline.datatypes import DataType
 
 logger = logging.getLogger(__name__)
@@ -31,42 +33,13 @@ class RadarVariableData(Data):
         return list(self._data.columns)
 
     def get_data_size(self) -> int:
-        if self.df_type == "pandas":
-            return len(self._data.index)
-        else:
-            return int(self._data.count())
+        return int(self._data.count())
 
     def _preprocess_data(self) -> None:
         """
         Converts all time value columns to datetime format
         """
-
-        if self.df_type == "spark":
-            if "value.time" in self.get_data_keys():
-                self._data = self._data.withColumn(
-                    "value.time", f.to_date(self._data["`value.time`"])
-                )
-            if "value.timeReceived" in self.get_data_keys():
-                self._data = self._data.withColumn(
-                    "value.timeReceived", f.to_date(self._data["`value.timeReceived`"])
-                )
-            if "value.dateTime" in self.get_data_keys():
-                self._data = self._data.withColumn(
-                    "value.dateTime", f.to_date(self._data["`value.dateTime`"])
-                )
-        else:
-            try:
-                if "value.time" in self.get_data_keys():
-                    self._data["value.time"] = pd.to_datetime(
-                        self._data["value.time"].astype(str), unit="s"
-                    )
-                if "value.timeReceived" in self.get_data_keys():
-                    self._data["value.timeReceived"] = pd.to_datetime(
-                        self._data["value.timeReceived"].astype(str), unit="s"
-                    )
-                if "value.dateTime" in self.get_data_keys():
-                    self._data["value.dateTime"] = pd.to_datetime(
-                        self._data["value.dateTime"].astype(str), unit="s"
-                    )
-            except ValueError:
-                logger.warning("Unable to convert time columns to datetime format")
+        try:
+            self._data = preprocess_time_data(self._data)
+        except ValueError:
+            logger.warning("Unable to convert time columns to datetime format")

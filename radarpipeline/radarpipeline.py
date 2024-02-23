@@ -26,6 +26,8 @@ def run(config_path: str = "config.yaml"):
         project.compute_features()
         logger.info("Exporting the features data...")
         project.export_data()
+        logger.info("Data exported successfully. Closing Spark Engine")
+        project.close_spark_session()
         logger.info("Pipeline run completed successfully")
     except KeyboardInterrupt:
         logger.info("Pipeline run interrupted by user")

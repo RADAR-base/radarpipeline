@@ -71,6 +71,7 @@ class TestProject(unittest.TestCase):
         self.assertListEqual(sorted(required_data_output), sorted(expected_data))
 
     def tearDown(self) -> None:
+        self.project.close_spark_session()
         del self.project
 
 
@@ -94,7 +95,5 @@ class TestProjectRemoteLink(unittest.TestCase):
         project = Project(self.remotelink)
         project_config = project._get_config()
         schema = utils.get_yaml_schema()
-        print(project_config)
-        print(self.expected_config)
         expected_config_updated = as_document(self.expected_config, schema).data
         self.assertDictEqual(project_config, expected_config_updated)
