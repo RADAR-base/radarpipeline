@@ -14,6 +14,7 @@ from pyspark.sql.utils import IllegalArgumentException
 from radarpipeline.common import constants
 from radarpipeline.datalib import RadarData, RadarUserData, RadarVariableData
 from radarpipeline.io.abc import DataReader, SchemaReader
+from radarpipeline.io.sampler import UserSampler, DataSampler
 from radarpipeline.common.utils import get_hash
 
 import avro
@@ -81,9 +82,21 @@ class Reader():
         self.data_type = self.config["input"]["data_format"]
         self.required_data = required_data
         self.df_type = df_type
+        if self.config["configurations"]['user_sampling'] is None:
+            self.user_sampler = None
+        else:
+            self.user_sampler = UserSampler(self.config["configurations"]
+                                            ['user_sampling'])
+        if self.config["configurations"]['data_sampling'] is None:
+            self.data_sampler = None
+        else:
+            self.data_sampler = DataSampler(self.config["configurations"]
+                                            ['data_sampling'])
+
         if self.data_type in ['csv', 'csv.gz']:
             self.reader_class = SparkCSVDataReader(spark_session, config,
-                                                   required_data, df_type)
+                                                   required_data, df_type,
+                                                   self.user_sampler, self.data_sampler)
         else:
             raise NotImplementedError("Only csv data type is supported for now")
 
@@ -104,7 +117,8 @@ class SparkCSVDataReader(DataReader):
     """
 
     def __init__(self, spark_session: ps.SparkSession,
-                 config: Dict, required_data: List[str], df_type: str = "pandas"):
+                 config: Dict, required_data: List[str], df_type: str = "pandas",
+                 user_sampler: UserSampler = None, data_sampler: DataSampler = None):
         super().__init__(config)
         self.source_formats = {
             # RADAR_OLD: uid/variable/yyyymmdd_hh00.csv.gz
@@ -117,6 +131,8 @@ class SparkCSVDataReader(DataReader):
         self.required_data = required_data
         self.df_type = df_type
         self.source_path = self.config['input']['config'].get("source_path", "")
+        self.user_sampler = user_sampler
+        self.data_sampler = data_sampler
         self.schema_reader = AvroSchemaReader()
         self.spark = spark_session
         self.unionByName = partial(DataFrame.unionByName, allowMissingColumns=True)
@@ -240,14 +256,16 @@ class SparkCSVDataReader(DataReader):
             variable_data = RadarVariableData(df, self.df_type)
         else:
             df = reduce(self.unionByName, dfs)
-            variable_data = RadarVariableData(df, self.df_type)
+            variable_data = RadarVariableData(df, self.df_type,
+                                              data_sampler=self.data_sampler)
         return variable_data
 
     def _read_data_from_old_format(self, source_path: str, user_data_dict: dict):
-        for uid in os.listdir(source_path):
-            # Skip hidden files
-            if uid[0] == ".":
-                continue
+        uids = os.listdir(source_path)
+        uids = self._remove_hidden_dirs(uids)
+        if self.user_sampler is not None:
+            uids = self.user_sampler.sample_uids(uids)
+        for uid in uids:
             logger.info(f"Reading data for user: {uid}")
             variable_data_dict = {}
             for dirname in self.required_data:
@@ -280,7 +298,11 @@ class SparkCSVDataReader(DataReader):
 
     def _read_data_from_new_format(self, source_path: str, user_data_dict: dict):
         # RADAR_NEW: uid/variable/yyyymm/yyyymmdd.csv.gz
-        for uid in os.listdir(source_path):
+        uids = os.listdir(source_path)
+        uids = self._remove_hidden_dirs(uids)
+        if self.user_sampler is not None:
+            uids = self.user_sampler.sample_uids(uids)
+        for uid in uids:
             # Skip hidden files
             if uid[0] == ".":
                 continue
@@ -317,6 +339,9 @@ class SparkCSVDataReader(DataReader):
             user_data_dict[uid] = RadarUserData(variable_data_dict, self.df_type)
         radar_data = RadarData(user_data_dict, self.df_type)
         return radar_data, user_data_dict
+
+    def _remove_hidden_dirs(self, uids):
+        return [uid for uid in uids if uid[0] != "."]
 
 
 class AvroSchemaReader(SchemaReader):
