@@ -274,7 +274,8 @@ def get_hash(array : List) -> int:
 
 
 def preprocess_time_data(data):
-    time_cols = ["value.time", "value.timeReceived", "value.dateTime"]
+    time_cols = ["value.time", "value.timeReceived", "value.dateTime",
+                 "value.timeCompleted", "value.timeNotification"]
     for i, col in enumerate(time_cols):
         if col in data.columns:
             data = data.withColumn(col, data[f"`{col}`"].cast(TimestampType()))
