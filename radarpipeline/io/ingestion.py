@@ -23,10 +23,13 @@ class CustomDataReader():
         """
         Modify the input configuration to include the variables of interest
         """
-        config = {'input': {}}
+        config = {'input': {}, "configurations": {}}
         config['input'] = input_config
         config['input']['data_format'] = data_format
         config['input']['data_type'] = self.data_type
+        config['configurations']['df_type'] = "pandas"
+        config['configurations']['user_sampling'] = None
+        config['configurations']['data_sampling'] = None
         return config
 
     def read_data(self):

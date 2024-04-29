@@ -178,6 +178,7 @@ def get_yaml_schema() -> Map:
             "compress": Bool()
         }),
         Optional("spark_config"): Map({
+            Optional("spark_master", default="local"): Str(),
             Optional("spark.executor.instances", default=4): Int(),
             Optional("spark.executor.cores", default=4): Int(),
             Optional("spark.executor.memory", default='10g'): Str(),

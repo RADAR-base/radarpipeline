@@ -69,5 +69,4 @@ output:
     compress: false
 
 spark_config:
-    spark.executor.instances: 2
-    spark.driver.memory: 13G
+    spark_master: local # Could be local, and if using a remote spark://host:port
