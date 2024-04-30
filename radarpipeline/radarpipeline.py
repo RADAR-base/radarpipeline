@@ -1,7 +1,7 @@
 import logging
 import sys
 import traceback
-
+from typing import Dict, Union
 from radarpipeline import Project
 from radarpipeline.common.logger import logger_init
 
@@ -10,7 +10,7 @@ logger_init()
 logger = logging.getLogger(__name__)
 
 
-def run(config_path: str = "config.yaml"):
+def run(config_path: Union[str, Dict] = "config.yaml"):
     """
     Pipeline entry point.
     config_path could be a local path to a configuration file
