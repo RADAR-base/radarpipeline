@@ -14,7 +14,8 @@ class SparkEngine():
     """
 
     def __init__(self, spark_config: Dict = None):
-        default_spark_config = {'spark.executor.instances': 2,
+        default_spark_config = {'spark_master': 'local',
+                                'spark.executor.instances': 2,
                                 'spark.driver.memory': '10G',
                                 'spark.executor.cores': 4,
                                 'spark.executor.memory': '10g',

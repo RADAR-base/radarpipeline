@@ -67,6 +67,3 @@ output:
         target_path: output/mockdata
     data_format: csv
     compress: false
-
-spark_config:
-    spark_master: local # Could be local, and if using a remote spark://host:port

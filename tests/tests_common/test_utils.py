@@ -135,6 +135,7 @@ class TestReadYaml(unittest.TestCase):
                 'data_format': 'csv',
                 'compress': False},
             'spark_config': {
+                "spark_master": "local",
                 "spark.executor.instances": 2,
                 "spark.memory.offHeap.enabled": False,
                 "spark.executor.cores": 4,

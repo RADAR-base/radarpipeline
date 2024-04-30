@@ -5,7 +5,7 @@ from radarpipeline.project import SparkEngine
 class TestSparkDefaultConfig(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.default_spark_config = {'spark.executor.instances': 6,
+        cls.default_spark_config = {'spark.executor.instances': 2,
                                     'spark.driver.memory': '10G',
                                     'spark.executor.cores': 4,
                                     'spark.executor.memory': '10g',
