@@ -227,7 +227,7 @@ class Project:
         Fetches the data from the data source
         """
 
-        if self.config["input"]["data_type"] == "local":
+        if self.config["input"]["source_type"] == "local":
             datareader = Reader(
                 self.spark_session,
                 self.config,
@@ -236,7 +236,7 @@ class Project:
             )
             self.data = datareader.read_data()
 
-        elif self.config["input"]["data_type"] == "mock":
+        elif self.config["input"]["source_type"] == "mock":
             MOCK_URL = "https://github.com/RADAR-base-Analytics/mockdata"
             cache_dir = os.path.join(
                 os.path.expanduser("~"), ".cache", "radarpipeline", "mockdata")
@@ -257,7 +257,7 @@ class Project:
             )
             self.data = datareader.read_data()
 
-        elif self.config["input"]["data_type"] == "sftp":
+        elif self.config["input"]["source_type"] == "sftp":
             sftp_data_reader = SftpDataReader(self.config["input"]["config"],
                                               self.total_required_data)
             root_dir = sftp_data_reader.get_root_dir()

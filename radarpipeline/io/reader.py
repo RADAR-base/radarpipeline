@@ -63,7 +63,7 @@ class Schemas(object):
 class Reader():
     '''
     Class for reading data from a file
-    Reader(data_type : str, data_path: str, variables: Union[str, List])
+    Reader(source_type : str, data_path: str, variables: Union[str, List])
     reader = Reader(...)
     reader.get_data(variables=Union[List, str])
     reader.get_user_data(user_id=..)
@@ -79,7 +79,7 @@ class Reader():
             df_type (str, optional): Type of dataframe format. Defaults to "pandas".
         """
         self.config = config
-        self.data_type = self.config["input"]["data_format"]
+        self.source_type = self.config["input"]["data_format"]
         self.required_data = required_data
         self.df_type = df_type
         if self.config["configurations"]['user_sampling'] is None:
@@ -93,7 +93,7 @@ class Reader():
             self.data_sampler = DataSampler(self.config["configurations"]
                                             ['data_sampling'])
 
-        if self.data_type in ['csv', 'csv.gz']:
+        if self.source_type in ['csv', 'csv.gz']:
             self.reader_class = SparkCSVDataReader(spark_session, config,
                                                    required_data, df_type,
                                                    self.user_sampler, self.data_sampler)
@@ -492,13 +492,13 @@ class AvroSchemaReader(SchemaReader):
         else:
             return {}
 
-    def _get_field(self, data_type: Union[str, Dict, List]) -> Any:
+    def _get_field(self, source_type: Union[str, Dict, List]) -> Any:
         """
         Returns a Spark data type for a given data type
 
         Parameters
         ----------
-        data_type : Union[str, Dict]
+        source_type : Union[str, Dict]
             Data type to convert to a Spark data type
 
         Returns
@@ -507,12 +507,12 @@ class AvroSchemaReader(SchemaReader):
             A Spark data type
         """
 
-        if type(data_type) is dict:
-            spark_data_type = self._get_data_type_from_dict(data_type)
-        elif type(data_type) is list:
-            spark_data_type = self._get_superior_type_from_list(data_type)
+        if type(source_type) is dict:
+            spark_data_type = self._get_data_type_from_dict(source_type)
+        elif type(source_type) is list:
+            spark_data_type = self._get_superior_type_from_list(source_type)
         else:
-            spark_data_type = self._get_data_type_from_mapping(data_type)
+            spark_data_type = self._get_data_type_from_mapping(source_type)
 
         return spark_data_type
 
@@ -522,13 +522,13 @@ class AvroSchemaReader(SchemaReader):
             list_type.append(schema.type)
         return self._get_superior_type_from_list(list_type)
 
-    def _handle_unknown_data_type(self, data_type: Union[str, Dict, List]) -> Any:
+    def _handle_unknown_data_type(self, source_type: Union[str, Dict, List]) -> Any:
         """
         Handles unknown data types
 
         Parameters
         ----------
-        data_type : Union[str, Dict]
+        source_type : Union[str, Dict]
             Data type to handle
 
         Returns
@@ -537,16 +537,16 @@ class AvroSchemaReader(SchemaReader):
             A Spark data type
         """
 
-        logger.warning(f"Unknown data type: {data_type}. Returning String type.")
+        logger.warning(f"Unknown data type: {source_type}. Returning String type.")
         return constants.STRING_TYPE
 
-    def _get_data_type_from_mapping(self, data_type: Union[str, Dict, List]) -> Any:
+    def _get_data_type_from_mapping(self, source_type: Union[str, Dict, List]) -> Any:
         """
         Returns a Spark data type for a given data type
 
         Parameters
         ----------
-        data_type : str
+        source_type : str
             Data type to convert to a Spark data type
 
         Returns
@@ -555,20 +555,20 @@ class AvroSchemaReader(SchemaReader):
             A Spark data type
         """
 
-        if data_type in constants.DATA_TYPE_MAPPING:
-            spark_data_type = constants.DATA_TYPE_MAPPING[data_type]
+        if source_type in constants.DATA_TYPE_MAPPING:
+            spark_data_type = constants.DATA_TYPE_MAPPING[source_type]
         else:
-            spark_data_type = self._handle_unknown_data_type(data_type)
+            spark_data_type = self._handle_unknown_data_type(source_type)
 
         return spark_data_type
 
-    def _get_data_type_from_dict(self, data_type: Dict) -> Any:
+    def _get_data_type_from_dict(self, source_type: Dict) -> Any:
         """
         Returns a Spark data type for a given data type
 
         Parameters
         ----------
-        data_type : Dict
+        source_type : Dict
             Data type to convert to a Spark data type
 
         Returns
@@ -577,10 +577,10 @@ class AvroSchemaReader(SchemaReader):
             A Spark data type
         """
 
-        if "type" in data_type:
-            return self._get_field(data_type["type"])
+        if "type" in source_type:
+            return self._get_field(source_type["type"])
         else:
-            return self._handle_unknown_data_type(data_type)
+            return self._handle_unknown_data_type(source_type)
 
     def _get_superior_type_from_list(self, data_type_list: List[Any]) -> Any:
         """
@@ -602,13 +602,13 @@ class AvroSchemaReader(SchemaReader):
         if "null" in spark_data_type_list:
             spark_data_type_list.remove("null")
 
-        for index, data_type in enumerate(spark_data_type_list):
-            if type(data_type) is dict:
-                spark_data_type_list[index] = self._get_data_type_from_dict(data_type)
-            elif data_type in constants.DATA_TYPE_MAPPING:
-                spark_data_type_list[index] = constants.DATA_TYPE_MAPPING[data_type]
+        for index, source_type in enumerate(spark_data_type_list):
+            if type(source_type) is dict:
+                spark_data_type_list[index] = self._get_data_type_from_dict(source_type)
+            elif source_type in constants.DATA_TYPE_MAPPING:
+                spark_data_type_list[index] = constants.DATA_TYPE_MAPPING[source_type]
             else:
-                spark_data_type_list[index] = self._handle_unknown_data_type(data_type)
+                spark_data_type_list[index] = self._handle_unknown_data_type(source_type)
 
         if len(data_type_list) == 0:
             return constants.STRING_TYPE

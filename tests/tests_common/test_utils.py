@@ -91,7 +91,7 @@ class TestReadYaml(unittest.TestCase):
                 'description': 'mock_description',
                 'version': 'mock_version'},
             'input': {
-                'data_type': 'mock',
+                'source_type': 'mock',
                 'config': {'source_path': 'mockdata/mockdata'},
                 'data_format': 'csv'
             },
@@ -121,7 +121,7 @@ class TestReadYaml(unittest.TestCase):
                 'description': 'mock_description',
                 'version': 'mock_version'},
             'input': {
-                'data_type': 'mock',
+                'source_type': 'mock',
                 'config': {'source_path': 'mockdata/mockdata'},
                 'data_format': 'csv'
             },
@@ -159,7 +159,7 @@ class TestReadYaml(unittest.TestCase):
                 'description': 'mock_description',
                 'version': 'mock_version'},
             'input': {
-                'data_type': 'mock',
+                'source_type': 'mock',
                 'config': {'source_path': 'mockdata/mockdata'},
                 'data_format': 'csv'
             },
@@ -190,7 +190,7 @@ class TestReadYaml(unittest.TestCase):
                 'description': 'mock_description',
                 'version': 'mock_version'},
             'input': {
-                'data_type': 'mock',
+                'source_type': 'mock',
                 'config': {'source_path': 'mockdata/mockdata'},
                 'data_format': 'csv'
             },
@@ -226,7 +226,7 @@ class TestReadYaml(unittest.TestCase):
                 'description': 'mock_description',
                 'version': 'mock_version'},
             'input': {
-                'data_type': 'mock',
+                'source_type': 'mock',
                 'config': {'source_path': 'mockdata/mockdata'},
                 'data_format': 'csv'
             },

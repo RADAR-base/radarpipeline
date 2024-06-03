@@ -59,7 +59,7 @@ class ConfigValidator():
         Validates the input data config
         """
 
-        if self.config["input"]["data_type"] == "sftp":
+        if self.config["input"]["source_type"] == "sftp":
             sftp_config_keys = [
                 "sftp_host",
                 "sftp_username",
@@ -70,7 +70,7 @@ class ConfigValidator():
                 if key not in self.config["input"]["config"]:
                     raise ValueError(f"Key not present in the config: {key}")
 
-        elif self.config["input"]["data_type"] == "local":
+        elif self.config["input"]["source_type"] == "local":
             if "source_path" not in self.config["input"]["config"]:
                 raise ValueError("Key not present in the config: source_path")
             else:
@@ -93,7 +93,7 @@ class ConfigValidator():
             if self.config["input"]["data_format"] not in self.valid_input_formats:
                 raise ValueError("Invalid value for key in input: data_format")
 
-        elif self.config["input"]["data_type"] == "mock":
+        elif self.config["input"]["source_type"] == "mock":
             self._update_mock_data()
 
         else:

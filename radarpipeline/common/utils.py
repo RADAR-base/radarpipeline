@@ -150,7 +150,7 @@ def get_yaml_schema() -> Map:
             Optional("version"): Str()
         }),
         "input": Map({
-            "data_type": Str(),
+            "source_type": Str(),
             "config": MapPattern(Str(), Str()),
             "data_format": Str()
         }),

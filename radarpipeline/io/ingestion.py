@@ -9,11 +9,11 @@ logger = logging.getLogger(__name__)
 
 
 class CustomDataReader():
-    def __init__(self, input_config, variables, data_type="local", data_format="csv",
+    def __init__(self, input_config, variables, source_type="local", data_format="csv",
                  df_type="pandas") -> None:
         self.variables = variables
         self.data_format = data_format
-        self.data_type = data_type
+        self.source_type = source_type
         self.config = self.modify_config(input_config, data_format)
         self.sparkengine = SparkEngine()
         self.spark = self.sparkengine.initialize_spark_session()
@@ -26,7 +26,7 @@ class CustomDataReader():
         config = {'input': {}, "configurations": {}}
         config['input'] = input_config
         config['input']['data_format'] = data_format
-        config['input']['data_type'] = self.data_type
+        config['input']['source_type'] = self.source_type
         config['configurations']['df_type'] = "pandas"
         config['configurations']['user_sampling'] = None
         config['configurations']['data_sampling'] = None
