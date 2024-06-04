@@ -63,31 +63,32 @@ class SparkEngine():
         Should be at least 1M, or 0 for unlimited.
         """
         if self.spark_config['spark_master'] == "local":
-                self.spark = (
-                    SparkSession.builder.master("local[*]").appName("radarpipeline")
-                    .config('spark.executor.instances',
-                            self.spark_config['spark.executor.instances'])
-                    .config('spark.executor.cores',
-                            self.spark_config['spark.executor.cores'])
-                    .config('spark.executor.memory',
-                            self.spark_config['spark.executor.memory'])
-                    .config('spark.driver.memory',
-                            self.spark_config['spark.driver.memory'])
-                    .config('spark.memory.offHeap.enabled',
-                            self.spark_config['spark.memory.offHeap.enabled'])
-                    .config('spark.memory.offHeap.size',
-                            self.spark_config['spark.memory.offHeap.size'])
-                    .config('spark.driver.maxResultSize',
-                            self.spark_config['spark.driver.maxResultSize'])
-                    .config('spark.log.level',
-                            self.spark_config['spark.log.level'])
-                    .getOrCreate()
-                )
+            self.spark = (
+                SparkSession.builder.master("local[*]").appName("radarpipeline")
+                .config('spark.executor.instances',
+                        self.spark_config['spark.executor.instances'])
+                .config('spark.executor.cores',
+                        self.spark_config['spark.executor.cores'])
+                .config('spark.executor.memory',
+                        self.spark_config['spark.executor.memory'])
+                .config('spark.driver.memory',
+                        self.spark_config['spark.driver.memory'])
+                .config('spark.memory.offHeap.enabled',
+                        self.spark_config['spark.memory.offHeap.enabled'])
+                .config('spark.memory.offHeap.size',
+                        self.spark_config['spark.memory.offHeap.size'])
+                .config('spark.driver.maxResultSize',
+                        self.spark_config['spark.driver.maxResultSize'])
+                .config('spark.log.level',
+                        self.spark_config['spark.log.level'])
+                .getOrCreate()
+            )
         else:
             self.spark = (
-                SparkSession.builder.master(self.spark_config['spark_master']).appName("radarpipeline")
+                SparkSession.builder.master(
+                    self.spark_config['spark_master']).appName("radarpipeline")
                 .getOrCreate()
-        )
+            )
         self.spark._jsc.setLogLevel(self.spark_config['spark.log.level'])
         self.spark.sparkContext.setLogLevel("OFF")
         # Enable Apache Arrow for optimizations in Spark to Pandas conversion

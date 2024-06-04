@@ -96,6 +96,129 @@ class TestSampling(unittest.TestCase):
         self.assertLessEqual(output_data['StepCountPerDay'][
             'date'].max(), pd.Timestamp(endtime).date())
 
+    def test_data_sampling_time_list(self):
+        starttime = "2018-11-25 00:00:00"
+        endtime = "2018-11-29 00:00:00"
+        time_list = [{"starttime": starttime, "endtime": endtime,
+                      "time_column": 'value.time'}]
+        data_sampling_config = self.default_config
+        data_sampling_config['configurations']['data_sampling'] = {}
+        data_sampling_config['configurations']['data_sampling']['method'] = 'time'
+        data_sampling_config['configurations'][
+            'data_sampling']['config'] = time_list
+        output_data = self.get_config_output(data_sampling_config)
+        self.assertGreaterEqual(output_data['PhoneBatteryChargingDuration'][
+            'date'].min(), pd.Timestamp(starttime).date())
+        self.assertLessEqual(output_data['PhoneBatteryChargingDuration'][
+            'date'].max(), pd.Timestamp(endtime).date())
+        self.assertGreaterEqual(output_data['StepCountPerDay'][
+            'date'].min(), pd.Timestamp(starttime).date())
+        self.assertLessEqual(output_data['StepCountPerDay'][
+            'date'].max(), pd.Timestamp(endtime).date())
+
+    def test_data_sampling_multiple_time(self):
+        starttime_1 = "2018-11-25 00:00:00"
+        endtime_1 = "2018-11-29 00:00:00"
+        starttime_2 = "2019-01-01 00:00:00"
+        endtime_2 = "2019-04-30 00:00:00"
+        time_list = [{"starttime": starttime_1, "endtime": endtime_1,
+                      "time_column": 'value.time'},
+                     {"starttime": starttime_2, "endtime": endtime_2}]
+        data_sampling_config = self.default_config
+        data_sampling_config['configurations']['data_sampling'] = {}
+        data_sampling_config['configurations']['data_sampling']['method'] = 'time'
+        data_sampling_config['configurations'][
+            'data_sampling']['config'] = time_list
+        output_data = self.get_config_output(data_sampling_config)
+        self.assertGreaterEqual(output_data['PhoneBatteryChargingDuration'][
+            'date'].min(), pd.Timestamp(starttime_1).date())
+        self.assertLessEqual(output_data['PhoneBatteryChargingDuration'][
+            'date'].max(), pd.Timestamp(endtime_2).date())
+        self.assertGreaterEqual(output_data['StepCountPerDay'][
+            'date'].min(), pd.Timestamp(starttime_1).date())
+        self.assertLessEqual(output_data['StepCountPerDay'][
+            'date'].max(), pd.Timestamp(endtime_2).date())
+        # check output_data['PhoneBatteryChargingDuration']['date'] is
+        # between the time range
+        # starttime_1 and endtime_1 and starttime_2 and endtime_2
+        self.assertTrue(all((output_data['PhoneBatteryChargingDuration']['date']
+                             >= pd.Timestamp(starttime_1).date())
+                            & (output_data['PhoneBatteryChargingDuration']['date']
+                               <= pd.Timestamp(endtime_1).date())
+                            | (output_data['PhoneBatteryChargingDuration']['date']
+                               >= pd.Timestamp(starttime_2).date())
+                            & (output_data['PhoneBatteryChargingDuration']['date']
+                               <= pd.Timestamp(endtime_2).date())))
+
+        self.assertTrue(all((output_data['StepCountPerDay']['date']
+                             >= pd.Timestamp(starttime_1).date())
+                            & (output_data['StepCountPerDay']['date']
+                               <= pd.Timestamp(endtime_1).date())
+                            | (output_data['StepCountPerDay']['date']
+                               >= pd.Timestamp(starttime_2).date())
+                            & (output_data['StepCountPerDay']['date']
+                               <= pd.Timestamp(endtime_2).date())))
+
+    def test_data_sampling_multiple_time_single_starttime(self):
+        starttime_1 = "2018-11-25 00:00:00"
+        endtime_1 = "2018-11-29 00:00:00"
+        starttime_2 = "2019-01-01 00:00:00"
+        time_list = [{"starttime": starttime_1, "endtime": endtime_1,
+                      "time_column": 'value.time'},
+                     {"starttime": starttime_2}]
+        data_sampling_config = self.default_config
+        data_sampling_config['configurations']['data_sampling'] = {}
+        data_sampling_config['configurations']['data_sampling']['method'] = 'time'
+        data_sampling_config['configurations'][
+            'data_sampling']['config'] = time_list
+        output_data = self.get_config_output(data_sampling_config)
+        # check output_data['PhoneBatteryChargingDuration']['date'] is between
+        # the time range
+        # starttime_1 and endtime_1 and starttime_2
+        self.assertTrue(all((output_data['PhoneBatteryChargingDuration']['date']
+                             >= pd.Timestamp(starttime_1).date())
+                            & (output_data['PhoneBatteryChargingDuration']['date']
+                               <= pd.Timestamp(endtime_1).date())
+                            | (output_data['PhoneBatteryChargingDuration']['date']
+                               >= pd.Timestamp(starttime_2).date())))
+
+        self.assertTrue(all((output_data['StepCountPerDay']['date']
+                             >= pd.Timestamp(starttime_1).date())
+                            & (output_data['StepCountPerDay']['date']
+                               <= pd.Timestamp(endtime_1).date())
+                            | (output_data['StepCountPerDay']['date']
+                               >= pd.Timestamp(starttime_2).date())))
+
+    def test_data_sampling_multiple_time_single_endtime(self):
+        endtime_1 = "2018-11-29 00:00:00"
+        starttime_2 = "2019-01-01 00:00:00"
+        endtime_2 = "2019-04-30 00:00:00"
+        time_list = [{"endtime": endtime_1,
+                      "time_column": 'value.time'},
+                     {"starttime": starttime_2, "endtime": endtime_2}]
+        data_sampling_config = self.default_config
+        data_sampling_config['configurations']['data_sampling'] = {}
+        data_sampling_config['configurations']['data_sampling']['method'] = 'time'
+        data_sampling_config['configurations'][
+            'data_sampling']['config'] = time_list
+        output_data = self.get_config_output(data_sampling_config)
+        # check output_data['PhoneBatteryChargingDuration']['date'] is between
+        # the time range
+        # endtime_1 and starttime_2 and endtime_2
+        self.assertTrue(all((output_data['PhoneBatteryChargingDuration']['date']
+                             <= pd.Timestamp(endtime_1).date())
+                            | (output_data['PhoneBatteryChargingDuration']['date']
+                               >= pd.Timestamp(starttime_2).date())
+                            & (output_data['PhoneBatteryChargingDuration']['date']
+                               <= pd.Timestamp(endtime_2).date())))
+
+        self.assertTrue(all((output_data['StepCountPerDay']['date']
+                             <= pd.Timestamp(endtime_1).date())
+                            | (output_data['StepCountPerDay']['date']
+                               >= pd.Timestamp(starttime_2).date())
+                            & (output_data['StepCountPerDay']['date']
+                               <= pd.Timestamp(endtime_2).date())))
+
     def test_data_sampling_count(self):
         data_sampling_config = self.default_config
         data_sampling_config['configurations']['data_sampling'] = {}

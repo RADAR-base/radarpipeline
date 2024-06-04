@@ -608,7 +608,8 @@ class AvroSchemaReader(SchemaReader):
             elif source_type in constants.DATA_TYPE_MAPPING:
                 spark_data_type_list[index] = constants.DATA_TYPE_MAPPING[source_type]
             else:
-                spark_data_type_list[index] = self._handle_unknown_data_type(source_type)
+                spark_data_type_list[index] = self._handle_unknown_data_type(
+                    source_type)
 
         if len(data_type_list) == 0:
             return constants.STRING_TYPE
