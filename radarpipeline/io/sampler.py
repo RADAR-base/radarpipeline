@@ -49,7 +49,9 @@ class DataSampler(Sampler):
             count = self.config['config']['count']
             # sample count of the data
             return self._sample_data(df, count / df.count())
-        elif self.config['method'] == "time":
+        elif self.config['method'] == "time" and not (type(self.config['config']) is list and len(self.config['config']) != 1):
+            if len(self.config['config']) == 1:
+                self.config['config'] = self.config['config'][0]
             starttime = self.config['config'].get('starttime', None)
             endtime = self.config['config'].get('endtime', None)
             time_col = self.config['config'].get('time_col', "value.time")
@@ -57,7 +59,18 @@ class DataSampler(Sampler):
             if time_col not in df.columns:
                 raise ValueError(f"Column {time_col} not found in the dataframe")
             return self._sample_data_by_time(df, starttime, endtime, time_col)
-
+        elif self.config['method'] == "time" and type(self.config['config']) is list:
+            sampled_dfs = []
+            for time_config in self.config['config']:
+                starttime = time_config.get('starttime', None)
+                endtime = time_config.get('endtime', None)
+                time_col = time_config.get('time_col', "value.time")
+                # check if time_col is present in df
+                if time_col not in df.columns:
+                    raise ValueError(f"Column {time_col} not found in the dataframe")
+                sampled_dfs.append(self._sample_data_by_time(df, starttime, endtime, time_col))
+            # combined sampled_dfs into one dataframe and deduplicate it
+            return sampled_dfs[0].union(*sampled_dfs[1:]).distinct()
         else:
             raise ValueError("Invalid method")
 

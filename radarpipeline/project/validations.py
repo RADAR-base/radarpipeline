@@ -344,23 +344,37 @@ class ConfigValidator():
             ]
         return sampling_config
 
-    def _validate_sampling_time(self, sampling_config):
-        if "config" not in sampling_config:
-            raise ValueError("Key not present in the user_sampling config: config")
-        if ("starttime" not in sampling_config["config"]
+    def _validate_sampling_time_instance(self, time_dict: dict):
+        if ("starttime" not in time_dict
             ) and (
-                "endtime" not in sampling_config["config"]):
+                "endtime" not in time_dict):
             raise ValueError("Neither startime nor endtime present in the config")
         # check if starttime and endtime are can be converted into time format
         # if so, convert them
-        if "starttime" in sampling_config["config"]:
-            sampling_config["config"]['starttime'] = utils.convert_str_to_time(
-                sampling_config["config"]['starttime'])
-        if "endtime" in sampling_config["config"]:
-            sampling_config["config"]['endtime'] = utils.convert_str_to_time(
-                sampling_config["config"]['endtime'])
-        if "time_column" not in sampling_config["config"]:
+        if "starttime" in time_dict:
+            time_dict['starttime'] = utils.convert_str_to_time(
+                time_dict['starttime'])
+        if "endtime" in time_dict:
+            time_dict['endtime'] = utils.convert_str_to_time(
+                time_dict['endtime'])
+        if "time_column" not in time_dict:
             logger.warning("time_column not present in the config. \
                 Using default time column: value.time")
-            sampling_config["config"]["time_column"] = "value.time"
+            time_dict["time_column"] = "value.time"
+        return time_dict
+
+    def _validate_sampling_time(self, sampling_config):
+        if "config" not in sampling_config:
+            raise ValueError("Key not present in the user_sampling config: config")
+        if type(sampling_config["config"]) is list:
+            if len(sampling_config["config"]) == 0:
+                raise ValueError(
+                    "No starttime and endtime present in the config"
+                )
+            for i, time_dict in enumerate(sampling_config["config"]):
+                sampling_config["config"][i] = self._validate_sampling_time_instance(
+                    time_dict)
+        else:
+            sampling_config["config"] = self._validate_sampling_time_instance(
+                sampling_config["config"])
         return sampling_config

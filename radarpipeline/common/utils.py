@@ -162,7 +162,7 @@ def get_yaml_schema() -> Map:
             }),
             Optional("data_sampling"): Map({
                 "method": Str(),
-                "config": MapPattern(Str(), Str()),
+                "config": MapPattern(Str(), Str()) | Seq(MapPattern(Str(), Str())),
             }),
         }),
         "features": Seq(Map({
