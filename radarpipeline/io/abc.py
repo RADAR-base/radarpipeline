@@ -55,3 +55,12 @@ class DataWriter(ABC):
     @abstractmethod
     def write_data(self) -> None:
         pass
+
+
+class Sampler(ABC):
+    """
+    Abstract class for sampling the RADAR data
+    """
+
+    def __init__(self, config) -> None:
+        self.config = config

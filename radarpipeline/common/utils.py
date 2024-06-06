@@ -10,6 +10,7 @@ import requests
 import yaml
 from strictyaml import load, Map, Int, Str, Seq, Bool, Optional
 from strictyaml import YAMLError, CommaSeparated, MapPattern
+from dateutil import parser
 
 import ntpath
 import posixpath
@@ -149,12 +150,20 @@ def get_yaml_schema() -> Map:
             Optional("version"): Str()
         }),
         "input": Map({
-            "data_type": Str(),
+            "source_type": Str(),
             "config": MapPattern(Str(), Str()),
             "data_format": Str()
         }),
         "configurations": Map({
-            "df_type": Str()
+            "df_type": Str(),
+            Optional("user_sampling"): Map({
+                "method": Str(),
+                "config": MapPattern(Str(), Seq(Str()) | Str()),
+            }),
+            Optional("data_sampling"): Map({
+                "method": Str(),
+                "config": MapPattern(Str(), Str()) | Seq(MapPattern(Str(), Str())),
+            }),
         }),
         "features": Seq(Map({
             "location": Str(),
@@ -169,6 +178,7 @@ def get_yaml_schema() -> Map:
             "compress": Bool()
         }),
         Optional("spark_config"): Map({
+            Optional("spark_master", default="local"): Str(),
             Optional("spark.executor.instances", default=4): Int(),
             Optional("spark.executor.cores", default=4): Int(),
             Optional("spark.executor.memory", default='10g'): Str(),
@@ -282,6 +292,15 @@ def preprocess_time_data(data):
             data.withColumn(col, f.from_unixtime(
                 f.unix_timestamp(f"`{col}`")))
     return data
+
+
+def convert_str_to_time(time):
+    try:
+        return parser.parse(time)
+    except ValueError:
+        raise ValueError(
+            "Invalid value for the key: time. It should be a valid time format"
+        )
 
 
 class PySparkTestCase(unittest.TestCase):

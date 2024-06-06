@@ -17,3 +17,4 @@ pytest-mock
 pytest-sftpserver
 dhp
 avro==1.11.2
+pyarrow==16.0.0
