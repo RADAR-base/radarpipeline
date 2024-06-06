@@ -80,17 +80,18 @@ class TestReadYaml(unittest.TestCase):
             "config_with_incorrect_spark.yaml"
         self.TESTDATA_FILENAME_WRONG = "tests/resources/config.yaml"
         self.TESTDATA_FILENAME_EMPTY = "tests/resources/test_config.yaml"
-
+        self.TESTDATA_FILENAME_USER_SAMPLING = "tests/resources/test_yamls/test_config_user_sampling.yaml"
+        self.TESTDATA_FILENAME_DATA_SAMPLING = "tests/resources/test_yamls/test_config_date_sampling.yaml"
+        self.TESTDATA_FILENAME_ALL_SAMPLING = "tests/resources/test_yamls/test_config_all_sampling.yaml"
     def test_read_correct_yaml(self):
         config = read_yaml(self.TESTDATA_FILENAME)
-        print(config)
         expected_config = {
             'project': {
                 'project_name': 'mock_project',
                 'description': 'mock_description',
                 'version': 'mock_version'},
             'input': {
-                'data_type': 'mock',
+                'source_type': 'mock',
                 'config': {'source_path': 'mockdata/mockdata'},
                 'data_format': 'csv'
             },
@@ -114,14 +115,13 @@ class TestReadYaml(unittest.TestCase):
 
     def test_read_yaml_with_spark_config(self):
         config = read_yaml(self.TESTDATA_FILENAME_SPARK)
-        print(config)
         expected_config = {
             'project': {
                 'project_name': 'mock_project',
                 'description': 'mock_description',
                 'version': 'mock_version'},
             'input': {
-                'data_type': 'mock',
+                'source_type': 'mock',
                 'config': {'source_path': 'mockdata/mockdata'},
                 'data_format': 'csv'
             },
@@ -137,6 +137,7 @@ class TestReadYaml(unittest.TestCase):
                 'data_format': 'csv',
                 'compress': False},
             'spark_config': {
+                "spark_master": "local",
                 "spark.executor.instances": 2,
                 "spark.memory.offHeap.enabled": False,
                 "spark.executor.cores": 4,
@@ -149,3 +150,105 @@ class TestReadYaml(unittest.TestCase):
     def test_read_yaml_with_incorrect_spark_config(self):
         with self.assertRaises(YAMLValidationError):
             read_yaml(self.TESTDATA_FILENAME_INCORRECT_SPARK)
+
+    def test_read_yaml_with_user_sampling(self):
+        config = read_yaml(self.TESTDATA_FILENAME_USER_SAMPLING)
+        expected_config = {
+            'project': {
+                'project_name': 'mock_project',
+                'description': 'mock_description',
+                'version': 'mock_version'},
+            'input': {
+                'source_type': 'mock',
+                'config': {'source_path': 'mockdata/mockdata'},
+                'data_format': 'csv'
+            },
+            'configurations': {
+                'df_type': 'pandas',
+                'user_sampling': {
+                    'method': 'userid',
+                    'config': {'userids': ["2a02e53a-951e-4fd0-b47f-195a87096bd0"]}
+                }
+            },
+            'features': [{
+                'location': 'https://github.com/RADAR-base-Analytics/mockfeatures',
+                'branch': 'main',
+                'feature_groups': ['MockFeatureGroup'],
+                'feature_names': [['all']]}],
+            'output': {
+                'output_location': 'local',
+                'config': {'target_path': 'output/mockdata'},
+                'data_format': 'csv',
+                'compress': False}}
+        self.assertDictEqual(config, expected_config)
+
+    def test_read_yaml_with_data_sampling(self):
+        config = read_yaml(self.TESTDATA_FILENAME_DATA_SAMPLING)
+        expected_config = {
+            'project': {
+                'project_name': 'mock_project',
+                'description': 'mock_description',
+                'version': 'mock_version'},
+            'input': {
+                'source_type': 'mock',
+                'config': {'source_path': 'mockdata/mockdata'},
+                'data_format': 'csv'
+            },
+            'configurations': {
+                'df_type': 'pandas',
+                'data_sampling': {
+                    'method': 'time',
+                    'config': {
+                        'starttime': '2018-11-25 00:00:00',
+                        'endtime': '2018-11-29 00:00:00',
+                        'time_column': 'value.time'
+                    }
+                }
+            },
+            'features': [{
+                'location': 'https://github.com/RADAR-base-Analytics/mockfeatures',
+                'branch': 'main',
+                'feature_groups': ['MockFeatureGroup'],
+                'feature_names': [['all']]}],
+            'output': {
+                'output_location': 'local',
+                'config': {'target_path': 'output/mockdata'},
+                'data_format': 'csv',
+                'compress': False}
+        }
+        self.assertDictEqual(config, expected_config)
+
+    def test_read_yaml_with_all_sampling(self):
+        config = read_yaml(self.TESTDATA_FILENAME_ALL_SAMPLING)
+        expected_config = {
+            'project': {
+                'project_name': 'mock_project',
+                'description': 'mock_description',
+                'version': 'mock_version'},
+            'input': {
+                'source_type': 'mock',
+                'config': {'source_path': 'mockdata/mockdata'},
+                'data_format': 'csv'
+            },
+            'configurations': {
+                'df_type': 'pandas',
+                'user_sampling': {
+                    'method': 'count',
+                    'config': {'count': "2"}
+                },
+                'data_sampling': {
+                    'method': 'count',
+                    'config': {'count': "100"}
+                }
+            },
+            'features': [{
+                'location': 'https://github.com/RADAR-base-Analytics/mockfeatures',
+                'branch': 'main',
+                'feature_groups': ['MockFeatureGroup'],
+                'feature_names': [['all']]}],
+            'output': {
+                'output_location': 'local',
+                'config': {'target_path': 'output/mockdata'},
+                'data_format': 'csv',
+                'compress': False}}
+        self.assertDictEqual(config, expected_config)

@@ -102,7 +102,6 @@ class PandasDataWriter(DataWriter):
                         index=False,
                         sep=constants.CSV_DELIMITER,
                         encoding=constants.ENCODING,
-                        line_terminator=constants.LINESEP,
                         compression=self.compression,
                     )
                 elif self.data_format == "pickle":

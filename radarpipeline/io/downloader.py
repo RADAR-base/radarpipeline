@@ -101,13 +101,14 @@ class SftpDataReader():
                                                            src_file),
                                                        preserve_mtime=True)
                         except FileNotFoundError:
-                            print("Folder not found: " + dir_path + "/" + src_file)
+                            logger.warning("Folder not found: " + dir_path
+                                           + "/" + src_file)
                             continue
                         except EOFError:
-                            print("EOFError: " + dir_path + "/" + src_file)
+                            logger.warning("EOFError: " + dir_path + "/" + src_file)
                             continue
         except FileNotFoundError:
-            print("Folder not found: " + uid)
+            logger.warning("Folder not found: " + uid)
             return
         sftp.close()
 

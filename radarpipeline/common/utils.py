@@ -10,11 +10,16 @@ import requests
 import yaml
 from strictyaml import load, Map, Int, Str, Seq, Bool, Optional
 from strictyaml import YAMLError, CommaSeparated, MapPattern
+from dateutil import parser
 
 import ntpath
 import posixpath
 
 from radarpipeline.common import constants
+import unittest
+from radarpipeline.project.sparkengine import SparkEngine
+import pyspark.sql.functions as f
+from pyspark.sql.types import TimestampType
 
 
 def read_yaml(yaml_file_path: str) -> Dict[str, Any]:
@@ -145,12 +150,20 @@ def get_yaml_schema() -> Map:
             Optional("version"): Str()
         }),
         "input": Map({
-            "data_type": Str(),
+            "source_type": Str(),
             "config": MapPattern(Str(), Str()),
             "data_format": Str()
         }),
         "configurations": Map({
-            "df_type": Str()
+            "df_type": Str(),
+            Optional("user_sampling"): Map({
+                "method": Str(),
+                "config": MapPattern(Str(), Seq(Str()) | Str()),
+            }),
+            Optional("data_sampling"): Map({
+                "method": Str(),
+                "config": MapPattern(Str(), Str()) | Seq(MapPattern(Str(), Str())),
+            }),
         }),
         "features": Seq(Map({
             "location": Str(),
@@ -165,6 +178,7 @@ def get_yaml_schema() -> Map:
             "compress": Bool()
         }),
         Optional("spark_config"): Map({
+            Optional("spark_master", default="local"): Str(),
             Optional("spark.executor.instances", default=4): Int(),
             Optional("spark.executor.cores", default=4): Int(),
             Optional("spark.executor.memory", default='10g'): Str(),
@@ -250,3 +264,54 @@ def get_write_file_attr(feature_name, output_dir, data_format, compression):
         raise ValueError(f"Invalid data format {data_format} specified \
             for spark writer")
     return file_path
+
+
+def get_hash(array : List) -> int:
+    """
+    Returns the hash of the array
+
+    Parameters
+    ----------
+    array : list
+        List of values
+
+    Returns
+    -------
+    str
+        Hash of the array
+    """
+    return hash(tuple(array))
+
+
+def preprocess_time_data(data):
+    time_cols = ["value.time", "value.timeReceived", "value.dateTime",
+                 "value.timeCompleted", "value.timeNotification"]
+    for i, col in enumerate(time_cols):
+        if col in data.columns:
+            data = data.withColumn(col, data[f"`{col}`"].cast(TimestampType()))
+            data.withColumn(col, f.from_unixtime(
+                f.unix_timestamp(f"`{col}`")))
+    return data
+
+
+def convert_str_to_time(time):
+    try:
+        return parser.parse(time)
+    except ValueError:
+        raise ValueError(
+            "Invalid value for the key: time. It should be a valid time format"
+        )
+
+
+class PySparkTestCase(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.spark_engine = SparkEngine()
+        cls.spark = cls.spark_engine.initialize_spark_session()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.spark_engine.close_spark_session()
+
+    def preprocess_data(self, data):
+        return preprocess_time_data(data)
