@@ -220,6 +220,8 @@ class SparkCSVDataReader(DataReader):
                     df = self.spark.read.load(
                         file_dict[column_hash],
                         format="csv",
+                        quote="\"",
+                        escape="\"",
                         header=True,
                         schema=schema.get_schema_by_hash(column_hash),
                         enforceSchema="false",
@@ -230,6 +232,8 @@ class SparkCSVDataReader(DataReader):
                     df = self.spark.read.load(
                         file_dict[column_hash],
                         format="csv",
+                        quote="\"",
+                        escape="\"",
                         header=True,
                         inferSchema="true",
                         encoding=constants.ENCODING,
