@@ -154,7 +154,8 @@ class Project:
         req_feature_groups = feature["feature_groups"]
 
         if feature_location == "custom":
-            all_feature_group_classes = [f(feature["feature_names"][0]) for f in self.custom_features]
+            all_feature_group_classes = [f(feature["feature_names"][0])
+                                         for f in self.custom_features]
         else:
             # Get feature class from __init__.py file in feature_location
             all_feature_group_classes = self._get_feature_groups_from_filepath(
