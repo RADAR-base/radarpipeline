@@ -11,6 +11,7 @@ from git.repo import Repo
 
 from radarpipeline.common import utils
 from radarpipeline.features import Feature, FeatureGroup
+from radarpipeline.features.custom import Tabularize
 from radarpipeline.io import PandasDataWriter, SparkDataWriter, Reader
 from radarpipeline.io import SftpDataReader
 from radarpipeline.project.validations import ConfigValidator
@@ -33,6 +34,7 @@ class Project:
 
         self.valid_input_formats = ["csv", "csv.gz"]
         self.valid_output_formats = ["csv", "pickle", "parquet"]
+        self.custom_features = [Tabularize]
         self.input_data = self._resolve_input_data(input_data)
         self.feature_path = os.path.abspath(
             os.path.join("radarpipeline", "features", "features")
@@ -151,10 +153,13 @@ class Project:
         feature_location = feature["location"]
         req_feature_groups = feature["feature_groups"]
 
-        # Get feature class from __init__.py file in feature_location
-        all_feature_group_classes = self._get_feature_groups_from_filepath(
-            feature_location
-        )
+        if feature_location == "custom":
+            all_feature_group_classes = [f(feature["feature_names"][0]) for f in self.custom_features]
+        else:
+            # Get feature class from __init__.py file in feature_location
+            all_feature_group_classes = self._get_feature_groups_from_filepath(
+                feature_location
+            )
 
         # Search feature_name in all_feature_classes
         for feature_group_class in all_feature_group_classes:
@@ -211,7 +216,7 @@ class Project:
         self.computable_feature_names = self.config["features"][0]['feature_names']
         total_required_data = set()
         for i, feature_group in enumerate(self.feature_groups):
-            if self.computable_feature_names[i][0] == 'all':
+            if self.computable_feature_names[i][0] == 'all' or feature_group.is_custom:
                 total_required_data.update(feature_group.get_required_data())
             else:
                 total_required_data.update(
@@ -285,7 +290,7 @@ class Project:
         self.computable_feature_names = self.config[
             "features"][0]['feature_names']
         for i, feature_group in enumerate(self.feature_groups):
-            if self.computable_feature_names[i][0] == "all":
+            if self.computable_feature_names[i][0] == "all" or feature_group.is_custom:
                 feature_names, feature_values = feature_group.get_all_features(
                     self.data
                 )

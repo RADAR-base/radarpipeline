@@ -11,7 +11,6 @@ import yaml
 from strictyaml import load, Map, Int, Str, Seq, Bool, Optional
 from strictyaml import YAMLError, CommaSeparated, MapPattern
 from dateutil import parser
-
 import ntpath
 import posixpath
 
@@ -143,7 +142,7 @@ def pascal_to_snake_case(s: str) -> str:
 
 
 def get_yaml_schema() -> Map:
-    schema = Map({
+   schema = Map({
         "project": Map({
             "project_name": Str(),
             Optional("description"): Str(),
@@ -188,7 +187,7 @@ def get_yaml_schema() -> Map:
             Optional("spark.driver.maxResultSize", default='0'): Str(),
         }),
     })
-    return schema
+   return schema
 
 
 def get_absolute_path(path: str) -> str:

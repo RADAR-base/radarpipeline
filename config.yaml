@@ -63,10 +63,15 @@ features:
           - MockFeatureGroup
       feature_names:
         - all
-
+    # Custom features
+    #- location: custom
+      #feature_groups:
+      #  - Tabularize
+      #feature_names:
+       # - android_phone_battery_level, android_phone_step_count
 output:
     output_location: local # can be local, postgres, sftp
     config:
-        target_path: output/mockdata
+        target_path: output/tabularize/
     data_format: csv
     compress: false
