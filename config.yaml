@@ -72,6 +72,6 @@ features:
 output:
     output_location: local # can be local, postgres, sftp
     config:
-        target_path: output/tabularize/
+        target_path: output/mockdata/
     data_format: csv
     compress: false
