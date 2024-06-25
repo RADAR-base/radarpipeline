@@ -18,7 +18,8 @@ class TestCustomFeatureTabularize(unittest.TestCase):
         # This is a very basic test, but it's a start
         # Assert if pipeline is throwring an error
         try:
-            radarpipeline.run("tests/resources/test_yamls/config_with_custom_feature.yaml")
+            radarpipeline.run(
+                "tests/resources/test_yamls/config_with_custom_feature.yaml")
             raised = False
         except Exception:
             raised = True
