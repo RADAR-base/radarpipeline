@@ -18,3 +18,4 @@ pytest-sftpserver
 dhp
 avro==1.11.3
 pyarrow==16.1.0
+setuptools
