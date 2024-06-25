@@ -60,15 +60,15 @@ features:
     - location: 'https://github.com/RADAR-base-Analytics/mockfeatures'
       branch: main
       feature_groups:
-          - MockFeatureGroup
+        - MockFeatureGroup
       feature_names:
         - all
     # Custom features
     #- location: custom
-      #feature_groups:
-      #  - Tabularize
-      #feature_names:
-       # - android_phone_battery_level, android_phone_step_count
+    #  feature_groups:
+    #    - Tabularize
+    #  feature_names:
+    #   - android_phone_battery_level, android_phone_step_count
 output:
     output_location: local # can be local, postgres, sftp
     config:

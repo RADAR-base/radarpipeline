@@ -214,7 +214,8 @@ class Project:
         List[str]
             List of all the required data
         """
-        self.computable_feature_names = self.config["features"][0]['feature_names']
+        self.computable_feature_names = [f['feature_names'][0] for
+                                         f in self.config["features"]]
         total_required_data = set()
         for i, feature_group in enumerate(self.feature_groups):
             if self.computable_feature_names[i][0] == 'all' or feature_group.is_custom:
@@ -288,8 +289,6 @@ class Project:
         """
         Computes the features from the ingested data
         """
-        self.computable_feature_names = self.config[
-            "features"][0]['feature_names']
         for i, feature_group in enumerate(self.feature_groups):
             if self.computable_feature_names[i][0] == "all" or feature_group.is_custom:
                 feature_names, feature_values = feature_group.get_all_features(
