@@ -233,7 +233,6 @@ class Project:
         """
         Fetches the data from the data source
         """
-
         if self.config["input"]["source_type"] == "local":
             datareader = Reader(
                 self.spark_session,

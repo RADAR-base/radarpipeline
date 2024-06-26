@@ -285,6 +285,8 @@ class ConfigValidator():
                 self.config["output"]["compress"] = False
             if self.config["output"]["compress"] == "true":
                 self.config["output"]["compress"] = True
+        elif self.config["output"]["output_location"] == "dataframe":
+            pass
         else:
             raise ValueError("Key not present in the config: output_location")
 
