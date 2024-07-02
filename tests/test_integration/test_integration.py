@@ -5,6 +5,7 @@ import pathlib as pl
 import os
 import pandas as pd
 from pandas.testing import assert_frame_equal
+from time import sleep
 
 
 class TestIntegration(unittest.TestCase):
@@ -19,6 +20,7 @@ class TestIntegration(unittest.TestCase):
         # Assert if pipeline is throwring an error
         try:
             radarpipeline.run()
+            sleep(10)
             raised = False
         except Exception:
             raised = True
@@ -55,6 +57,7 @@ class TestIntegration(unittest.TestCase):
         try:
             radarpipeline.run(
                 "tests/resources/test_yamls/config_with_multiple_features.yaml")
+            sleep(10)
             raised = False
         except Exception:
             raised = True
@@ -118,3 +121,15 @@ class TestIntegration(unittest.TestCase):
                            actual_df.sort_values(['key.userId', 'value.time'])
                            .reset_index(drop=True))
         path.unlink()
+
+    def rmtree(self, f: pl.Path):
+        if f.is_file():
+            f.unlink()
+        else:
+            for child in f.iterdir():
+                self.rmtree(child)
+            f.rmdir()
+
+    def tearDown(self):
+        # Delete the output directory after the test
+        self.rmtree(pl.Path(self.output_dir))
