@@ -36,33 +36,40 @@ class SparkDataWriter(DataWriter):
 
     def write_data(self) -> None:
         for feature_name, feature_df in self.features.items():
-            folder_name = utils.pascal_to_snake_case(feature_name)
-            folder_path = os.path.join(self.output_dir, folder_name)
-            try:
-                if self.data_format == 'csv':
-                    feature_df.write.csv(
-                        path=folder_path,
-                        header=True,
-                        sep=constants.CSV_DELIMITER,
-                        encoding=constants.ENCODING,
-                        compression=self.compression,
-                        lineSep=constants.LINESEP,
-                    )
-                elif self.data_format == "parquet":
-                    feature_df.write.parquet(
-                        path=folder_path,
-                        compression=self.compression,
-                    )
-                else:
-                    raise ValueError(
-                        f"Invalid data format {self.data_format} specified \
-                            for spark writer"
-                    )
-            except Exception as e:
-                logger.error(
-                    f"Error writing data to file {folder_path}: {e}", exc_info=True
+            if isinstance(feature_df, dict):
+                for key, value in feature_df.items():
+                    self.save_dataframe(f"{feature_name}_{key}", value)
+            else:
+                self.save_dataframe(feature_name, feature_df)
+
+    def save_dataframe(self, feature_name, feature_df):
+        folder_name = utils.pascal_to_snake_case(feature_name)
+        folder_path = os.path.join(self.output_dir, folder_name)
+        try:
+            if self.data_format == 'csv':
+                feature_df.write.csv(
+                    path=folder_path,
+                    header=True,
+                    sep=constants.CSV_DELIMITER,
+                    encoding=constants.ENCODING,
+                    compression=self.compression,
+                    lineSep=constants.LINESEP,
                 )
-            logger.info(f"Feature {feature_name} data exported to {folder_path}")
+            elif self.data_format == "parquet":
+                feature_df.write.parquet(
+                    path=folder_path,
+                    compression=self.compression,
+                )
+            else:
+                raise ValueError(
+                    f"Invalid data format {self.data_format} specified \
+                        for spark writer"
+                )
+        except Exception as e:
+            logger.error(
+                f"Error writing data to file {folder_path}: {e}", exc_info=True
+            )
+        logger.info(f"Feature {feature_name} data exported to {folder_path}")
 
 
 class PandasDataWriter(DataWriter):
@@ -91,32 +98,39 @@ class PandasDataWriter(DataWriter):
 
     def write_data(self) -> None:
         for feature_name, feature_df in self.features.items():
-            file_path = utils.get_write_file_attr(feature_name,
-                                                  self.output_dir,
-                                                  self.data_format,
-                                                  self.compression)
-            try:
-                if self.data_format == "csv":
-                    feature_df.to_csv(
-                        file_path,
-                        index=False,
-                        sep=constants.CSV_DELIMITER,
-                        encoding=constants.ENCODING,
-                        compression=self.compression,
-                    )
-                elif self.data_format == "pickle":
-                    feature_df.to_pickle(file_path, compression=self.compression)
-                elif self.data_format == "parquet":
-                    if self.compression == "infer":
-                        feature_df.to_parquet(file_path, compression=None)
-                    else:
-                        feature_df.to_parquet(file_path, compression=self.compression)
-                else:
-                    raise ValueError(
-                        f"Invalid data format {self.data_format} specified"
-                    )
-            except Exception as e:
-                logger.error(
-                    f"Error writing data to file {file_path}: {e}", exc_info=True
+            if isinstance(feature_df, dict):
+                for key, value in feature_df.items():
+                    self.save_dataframe(f"{feature_name}_{key}", value)
+            else:
+                self.save_dataframe(feature_name, feature_df)
+
+    def save_dataframe(self, feature_name, feature_df):
+        file_path = utils.get_write_file_attr(feature_name,
+                                              self.output_dir,
+                                              self.data_format,
+                                              self.compression)
+        try:
+            if self.data_format == "csv":
+                feature_df.to_csv(
+                    file_path,
+                    index=False,
+                    sep=constants.CSV_DELIMITER,
+                    encoding=constants.ENCODING,
+                    compression=self.compression,
                 )
-            logger.info(f"Feature {feature_name} data exported to {file_path}")
+            elif self.data_format == "pickle":
+                feature_df.to_pickle(file_path, compression=self.compression)
+            elif self.data_format == "parquet":
+                if self.compression == "infer":
+                    feature_df.to_parquet(file_path, compression=None)
+                else:
+                    feature_df.to_parquet(file_path, compression=self.compression)
+            else:
+                raise ValueError(
+                    f"Invalid data format {self.data_format} specified"
+                )
+        except Exception as e:
+            logger.error(
+                f"Error writing data to file {file_path}: {e}", exc_info=True
+            )
+        logger.info(f"Feature {feature_name} data exported to {file_path}")

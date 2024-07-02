@@ -18,6 +18,7 @@ class FeatureGroup(ABC):
     description: str
     features: List["Feature"]
     required_input_data: List[str]
+    is_custom: bool = False
 
     def __init__(self, name: str, description: str, features: List["Feature"]):
         self.name = name

@@ -11,7 +11,6 @@ import yaml
 from strictyaml import load, Map, Int, Str, Seq, Bool, Optional
 from strictyaml import YAMLError, CommaSeparated, MapPattern
 from dateutil import parser
-
 import ntpath
 import posixpath
 

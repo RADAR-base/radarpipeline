@@ -50,3 +50,71 @@ class TestIntegration(unittest.TestCase):
                            actual_df.sort_values(['key.userId', 'date'])
                            .reset_index(drop=True))
         path.unlink()
+
+    def test_multiple_feature_run(self):
+        try:
+            radarpipeline.run(
+                "tests/resources/test_yamls/config_with_multiple_features.yaml")
+            raised = False
+        except Exception:
+            raised = True
+        self.assertFalse(raised, 'Exception raised')
+        project = Project(input_data="config.yaml")
+        # Assert if output files are created
+        self.output_dir = project.config['output']["config"]['target_path']
+        path = pl.Path(os.path.join(self.output_dir,
+                                    "phone_battery_charging_duration.csv"))
+        self.assertIsFile(path)
+        # read the file and verify that the output is the same
+        expected_output_path = "tests/resources/expected_output"
+        expected_df = pd.read_csv(os.path.join(expected_output_path,
+                                               "phone_battery_charging_duration.csv"))
+        actual_df = pd.read_csv(path)
+        assert_frame_equal(expected_df.sort_values(['key.userId', 'date'])
+                           .reset_index(drop=True),
+                           actual_df.sort_values(['key.userId', 'date'])
+                           .reset_index(drop=True), check_datetimelike_compat=True)
+        path.unlink()
+
+        path = pl.Path(os.path.join(self.output_dir, "step_count_per_day.csv"))
+        self.assertIsFile(path)
+        # read the file and verify that the output is the same
+        expected_df = pd.read_csv(os.path.join(expected_output_path,
+                                               "step_count_per_day.csv"))
+        actual_df = pd.read_csv(path)
+        assert_frame_equal(expected_df.sort_values(['key.userId', 'date'])
+                           .reset_index(drop=True),
+                           actual_df.sort_values(['key.userId', 'date'])
+                           .reset_index(drop=True))
+        path.unlink()
+
+        path = pl.Path(os.path.join(
+            self.output_dir,
+            "tabularize_features_android_phone_battery_level.csv"))
+        self.assertIsFile(path)
+        # read the file and verify that the output is the same
+        expected_output_path = "tests/resources/expected_output/tabular"
+        expected_df = pd.read_csv(
+            os.path.join(expected_output_path,
+                         "tabularize_features_android_phone_battery_level.csv"))
+        actual_df = pd.read_csv(path)
+        assert_frame_equal(expected_df.sort_values(['key.userId', 'value.time'])
+                           .reset_index(drop=True),
+                           actual_df.sort_values(['key.userId', 'value.time'])
+                           .reset_index(drop=True), check_datetimelike_compat=True)
+        path.unlink()
+        path = pl.Path(
+            os.path.join(
+                self.output_dir,
+                "tabularize_features_android_phone_step_count.csv"))
+        self.assertIsFile(path)
+        # read the file and verify that the output is the same
+        expected_df = pd.read_csv(
+            os.path.join(expected_output_path,
+                         "tabularize_features_android_phone_step_count.csv"))
+        actual_df = pd.read_csv(path)
+        assert_frame_equal(expected_df.sort_values(['key.userId', 'value.time'])
+                           .reset_index(drop=True),
+                           actual_df.sort_values(['key.userId', 'value.time'])
+                           .reset_index(drop=True))
+        path.unlink()

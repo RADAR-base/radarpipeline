@@ -207,8 +207,9 @@ class ConfigValidator():
                     f"feature_groups array cannot be empty at index {index}"
                 )
             feature_location = feature["location"]
-
-            if utils.is_valid_github_path(feature_location):
+            if feature_location == "custom":
+                pass
+            elif utils.is_valid_github_path(feature_location):
                 repo_name = utils.get_repo_name_from_url(feature_location)
                 cache_dir = os.path.join(
                     os.path.expanduser("~"), ".cache", "radarpipeline", repo_name
@@ -284,6 +285,8 @@ class ConfigValidator():
                 self.config["output"]["compress"] = False
             if self.config["output"]["compress"] == "true":
                 self.config["output"]["compress"] = True
+        elif self.config["output"]["output_location"] == "dataframe":
+            pass
         else:
             raise ValueError("Key not present in the config: output_location")
 
