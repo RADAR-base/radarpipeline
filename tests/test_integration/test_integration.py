@@ -20,7 +20,6 @@ class TestIntegration(unittest.TestCase):
         # Assert if pipeline is throwring an error
         try:
             radarpipeline.run()
-            sleep(10)
             raised = False
         except Exception:
             raised = True
@@ -57,12 +56,11 @@ class TestIntegration(unittest.TestCase):
         try:
             radarpipeline.run(
                 "tests/resources/test_yamls/config_with_multiple_features.yaml")
-            sleep(10)
             raised = False
         except Exception:
             raised = True
         self.assertFalse(raised, 'Exception raised')
-        project = Project(input_data="config.yaml")
+        project = Project(input_data="tests/resources/test_yamls/config_with_multiple_features.yaml")
         # Assert if output files are created
         self.output_dir = project.config['output']["config"]['target_path']
         path = pl.Path(os.path.join(self.output_dir,
