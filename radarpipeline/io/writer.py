@@ -9,6 +9,8 @@ from radarpipeline.common import constants, utils
 from radarpipeline.datatypes.data_types import DataType
 from radarpipeline.io.abc import DataWriter
 
+from pathlib import Path
+
 logger = logging.getLogger(__name__)
 
 
@@ -110,6 +112,7 @@ class PandasDataWriter(DataWriter):
                                               self.data_format,
                                               self.compression)
         try:
+            Path(file_path).parent.mkdir(parents=True, exist_ok=True)
             if self.data_format == "csv":
                 feature_df.to_csv(
                     file_path,

@@ -127,6 +127,9 @@ class SparkCSVDataReader(DataReader):
             # RADAR_NEW: uid/variable/yyyymm/yyyymmdd.csv.gz
             "RADAR_NEW": re.compile(r"""^[\w-]+/([\w]+)/
                                     [\d]+/([\d]+.csv.gz$|schema-\1.json$)""", re.X),
+            # RADAR_OLD: uid/questionnaire/QuestionaireName/yyyymm/yyyymmdd.csv.gz
+            "RADAR_QUES": re.compile(r"""^[\w-]+/([\w]+)/([\w]+)/
+                                    [\d]+/([\d]+.csv.gz$|schema-\1.json$)""", re.X)
         }
         self.required_data = required_data
         self.df_type = df_type
@@ -150,7 +153,7 @@ class SparkCSVDataReader(DataReader):
             file_format = file.replace(source_path, "")
             if re.match(value, file_format):
                 return key
-        raise ValueError("Source type not recognized")
+        raise ValueError("Source path not recognized")
 
     def read_data(self) -> RadarData:
         """
@@ -172,7 +175,7 @@ class SparkCSVDataReader(DataReader):
                 logger.info("Reading data from old RADAR format")
                 radar_data, user_data_dict = self._read_data_from_old_format(
                     source_path_item, user_data_dict)
-            elif source_type == "RADAR_NEW":
+            elif source_type == "RADAR_NEW" or source_type == "RADAR_QUES":
                 logger.info("Reading data from new RADAR format")
                 radar_data, user_data_dict = self._read_data_from_new_format(
                     source_path_item, user_data_dict)
@@ -313,7 +316,7 @@ class SparkCSVDataReader(DataReader):
             logger.info(f"Reading data for user: {uid}")
             variable_data_dict = {}
             for dirname in self.required_data:
-                if dirname not in os.listdir(os.path.join(source_path, uid)):
+                if not os.path.exists(os.path.join(source_path, uid, dirname)):
                     continue
                 logger.info(f"Reading data for variable: {dirname}")
                 data_files = []
@@ -369,6 +372,8 @@ class AvroSchemaReader(SchemaReader):
         bool
             True if schema is present, False otherwise
         """
+        if "/" in schema_dir_base:
+            schema_dir_base = schema_dir_base.split("/")[0]
         schema_file = os.path.join(
             schema_dir, f"schema-{schema_dir_base}.json"
         )
@@ -378,6 +383,9 @@ class AvroSchemaReader(SchemaReader):
         return False
 
     def get_schema(self, schema_dir, schema_dir_base) -> StructType:
+
+        if "/" in schema_dir_base:
+            schema_dir_base = schema_dir_base.split("/")[0]
         if schema_dir_base in self.schema_dict:
             return self.schema_dict[schema_dir_base]
         else:
