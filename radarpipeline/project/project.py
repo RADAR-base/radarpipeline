@@ -270,10 +270,10 @@ class Project:
             logger.info("Reading data from sftp")
             sftp_data_reader.read_sftp_data()
             self.config["input"] = {
-                    "source_type": "local",
-                    "data_format": "csv",
-                    "config": {
-                        "source_path": root_dir
+                "source_type": "local",
+                "data_format": "csv",
+                "config": {
+                    "source_path": root_dir
                 },
             }
 

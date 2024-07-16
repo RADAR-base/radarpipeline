@@ -5,6 +5,7 @@ from glob import glob
 import gzip
 import re
 from typing import Any, Dict, List, Optional, Union
+import concurrent.futures
 
 import pyspark.sql as ps
 from pyspark.sql import SparkSession, DataFrame
@@ -272,7 +273,8 @@ class SparkCSVDataReader(DataReader):
         uids = self._remove_hidden_dirs(uids)
         if self.user_sampler is not None:
             uids = self.user_sampler.sample_uids(uids)
-        for uid in uids:
+
+        def process_uid(uid):
             logger.info(f"Reading data for user: {uid}")
             variable_data_dict = {}
             for dirname in self.required_data:
@@ -300,6 +302,9 @@ class SparkCSVDataReader(DataReader):
                 if variable_data.get_data_size() > 0:
                     variable_data_dict[dirname] = variable_data
             user_data_dict[uid] = RadarUserData(variable_data_dict, self.df_type)
+
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            executor.map(process_uid, uids)
         radar_data = RadarData(user_data_dict, self.df_type)
         return radar_data, user_data_dict
 
@@ -309,10 +314,11 @@ class SparkCSVDataReader(DataReader):
         uids = self._remove_hidden_dirs(uids)
         if self.user_sampler is not None:
             uids = self.user_sampler.sample_uids(uids)
-        for uid in uids:
+
+        def process_uid(uid):
             # Skip hidden files
             if uid[0] == ".":
-                continue
+                return
             logger.info(f"Reading data for user: {uid}")
             variable_data_dict = {}
             for dirname in self.required_data:
@@ -344,6 +350,9 @@ class SparkCSVDataReader(DataReader):
                 if variable_data.get_data_size() > 0:
                     variable_data_dict[dirname] = variable_data
             user_data_dict[uid] = RadarUserData(variable_data_dict, self.df_type)
+
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            executor.map(process_uid, uids)
         radar_data = RadarData(user_data_dict, self.df_type)
         return radar_data, user_data_dict
 
