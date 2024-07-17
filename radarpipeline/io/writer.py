@@ -27,12 +27,10 @@ class SparkDataWriter(DataWriter):
         self,
         features: Dict[str, DataType],
         output_dir: str,
-        num_files: Optional[int] = 1,
         compress: bool = False,
         data_format: str = "csv",
     ) -> None:
         super().__init__(features, output_dir)
-        self.num_files = num_files
         self.compression = "gzip" if compress is True else "none"
         self.data_format = data_format
 
@@ -59,7 +57,7 @@ class SparkDataWriter(DataWriter):
                 )
             elif self.data_format == "parquet":
                 feature_df.write.parquet(
-                    path=folder_path,
+                    path=folder_path + ".parquet",
                     compression=self.compression,
                 )
             else:
