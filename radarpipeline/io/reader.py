@@ -145,15 +145,14 @@ class SparkCSVDataReader(DataReader):
         """
         Returns the source type of the data
         """
-        files = [y for x in os.walk(source_path) for y in
-                 glob(os.path.join(x[0], '*.*'))]
         if source_path[-1] != "/":
             source_path = source_path + "/"
-        for key, value in self.source_formats.items():
-            file = files[0]
-            file_format = file.replace(source_path, "")
-            if re.match(value, file_format):
-                return key
+        for x in os.walk(source_path):
+            for file in glob(os.path.join(x[0], '*.*')):
+                for key, value in self.source_formats.items():
+                    file_format = file.replace(source_path, "")
+                    if re.match(value, file_format):
+                        return key
         raise ValueError("Source path not recognized")
 
     def read_data(self) -> RadarData:
