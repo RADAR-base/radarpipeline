@@ -31,8 +31,13 @@ class SparkDataWriter(DataWriter):
         data_format: str = "csv",
     ) -> None:
         super().__init__(features, output_dir)
-        self.compression = "gzip" if compress is True else "none"
         self.data_format = data_format
+        if data_format == "csv" or data_format == "pickle":
+            self.compression = "gzip" if compress is True else "infer"
+        elif data_format == "parquet":
+            self.compression = "gzip" if compress is True else "snappy"
+        else:
+            logger.warning("Invalid data format specified. Using default compression")
 
     def write_data(self) -> None:
         for feature_name, feature_df in self.features.items():
@@ -56,6 +61,8 @@ class SparkDataWriter(DataWriter):
                     lineSep=constants.LINESEP,
                 )
             elif self.data_format == "parquet":
+                logger.info(f"Total Number of Rdd Partitions:{
+                    feature_df.rdd.getNumPartitions()}")
                 feature_df.write.parquet(
                     path=folder_path + ".parquet",
                     compression=self.compression,

@@ -81,6 +81,8 @@ class SparkEngine():
                         self.spark_config['spark.driver.maxResultSize'])
                 .config('spark.log.level',
                         self.spark_config['spark.log.level'])
+                .config("spark.serializer",
+                        "org.apache.spark.serializer.KryoSerializer")
                 .getOrCreate()
             )
         else:
