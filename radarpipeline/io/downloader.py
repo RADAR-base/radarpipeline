@@ -89,16 +89,10 @@ class SftpDataReader():
                                                 root_path, dir_path, src_file
                                             )
                                         ):
-                                            os.makedirs(
-                                                os.path.join(
-                                                    root_path, dir_path,
-                                                    src_file),
-                                                exist_ok=True)
-                                            sftp.get_d(src_file,
+                                            sftp.get_r(src_file,
                                                        os.path.join(
                                                            root_path,
-                                                           dir_path,
-                                                           src_file),
+                                                           dir_path),
                                                        preserve_mtime=True)
                         except FileNotFoundError:
                             logger.warning("Folder not found: " + dir_path
@@ -116,6 +110,8 @@ class SftpDataReader():
         if categories == "all":
             return True
         for category in categories:
+            if "/" in category:
+                category = category.split("/")[0]
             if src[:len(category)] == category:
                 return True
         return False

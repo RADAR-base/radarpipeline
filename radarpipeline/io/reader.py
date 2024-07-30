@@ -147,7 +147,7 @@ class SparkCSVDataReader(DataReader):
         """
         if source_path[-1] != "/":
             source_path = source_path + "/"
-        for x in os.walk(source_path):
+        for x in os.walk(source_path, topdown=False):
             for file in glob(os.path.join(x[0], '*.*')):
                 for key, value in self.source_formats.items():
                     file_format = file.replace(source_path, "")
