@@ -94,7 +94,7 @@ class TestIntegration(unittest.TestCase):
             "tabularize_features_android_phone_battery_level.csv"))
         self.assertIsFile(path)
         # read the file and verify that the output is the same
-        expected_output_path = "tests/resources/expected_output/tabular"
+        expected_output_path = "tests/resources/expected_output/tabular/"
         expected_df = pd.read_csv(
             os.path.join(expected_output_path,
                          "tabularize_features_android_phone_battery_level.csv"))

@@ -26,7 +26,7 @@ class TestSparkDataWriter(unittest.TestCase):
             .getOrCreate()
         # Create PySpark DataFrame from Pandas
         self.sparkDF = spark.createDataFrame(self.mock_pandas)
-
+        self.suffix = ""
         self.features = {"test_feature": self.sparkDF}
 
     def test_write_data_csv(self):
@@ -54,20 +54,21 @@ class TestSparkDataWriter(unittest.TestCase):
                                                data_format="parquet")
         self.sparkdatawriter.write_data()
         # check if the dir exists
-        self.assertTrue(os.path.exists(f"{self.output_dir}" + "test_feature"))
+        self.assertTrue(os.path.exists(f"{self.output_dir}" + "test_feature.parquet"))
         # check if the file has the correct content
         ## spark read the directory
         spark = SparkSession.builder \
             .master("local") \
             .appName("radarpipeline") \
             .getOrCreate()
-        output_file = spark.read.parquet(f"{self.output_dir}" + "test_feature")
+        self.suffix = ".parquet"
+        output_file = spark.read.parquet(f"{self.output_dir}" + "test_feature.parquet")
         assert_pyspark_df_equal(output_file, self.sparkDF)
         assert_frame_equal(output_file.toPandas(), self.mock_pandas)
 
     def tearDown(self):
         # delete the file
-        path = pl.Path(f"{self.output_dir}" + "test_feature")
+        path = pl.Path(f"{self.output_dir}" + "test_feature" + self.suffix)
         shutil.rmtree(path)
 
 

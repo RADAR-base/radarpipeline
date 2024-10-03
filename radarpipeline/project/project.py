@@ -269,16 +269,19 @@ class Project:
             root_dir = sftp_data_reader.get_root_dir()
             logger.info("Reading data from sftp")
             sftp_data_reader.read_sftp_data()
-            sftp_local_config = {
+            self.config["input"] = {
+                "source_type": "local",
+                "data_format": "csv",
                 "config": {
                     "source_path": root_dir
-                }
+                },
             }
+
             datareader = Reader(
                 self.spark_session,
-                sftp_local_config,
+                self.config,
                 self.total_required_data,
-                self.config["configurations"]["df_type"],
+                self.config["configurations"]['df_type'],
             )
             self.data = datareader.read_data()
         else:

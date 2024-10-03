@@ -9,6 +9,8 @@ from radarpipeline.common import constants, utils
 from radarpipeline.datatypes.data_types import DataType
 from radarpipeline.io.abc import DataWriter
 
+from pathlib import Path
+
 logger = logging.getLogger(__name__)
 
 
@@ -25,14 +27,17 @@ class SparkDataWriter(DataWriter):
         self,
         features: Dict[str, DataType],
         output_dir: str,
-        num_files: Optional[int] = 1,
         compress: bool = False,
         data_format: str = "csv",
     ) -> None:
         super().__init__(features, output_dir)
-        self.num_files = num_files
-        self.compression = "gzip" if compress is True else "none"
         self.data_format = data_format
+        if data_format == "csv" or data_format == "pickle":
+            self.compression = "gzip" if compress is True else "uncompressed"
+        elif data_format == "parquet":
+            self.compression = "gzip" if compress is True else "snappy"
+        else:
+            logger.warning("Invalid data format specified. Using default compression")
 
     def write_data(self) -> None:
         for feature_name, feature_df in self.features.items():
@@ -57,7 +62,7 @@ class SparkDataWriter(DataWriter):
                 )
             elif self.data_format == "parquet":
                 feature_df.write.parquet(
-                    path=folder_path,
+                    path=folder_path + ".parquet",
                     compression=self.compression,
                 )
             else:
@@ -110,6 +115,7 @@ class PandasDataWriter(DataWriter):
                                               self.data_format,
                                               self.compression)
         try:
+            Path(file_path).parent.mkdir(parents=True, exist_ok=True)
             if self.data_format == "csv":
                 feature_df.to_csv(
                     file_path,

@@ -5,6 +5,7 @@ from glob import glob
 import gzip
 import re
 from typing import Any, Dict, List, Optional, Union
+import concurrent.futures
 
 import pyspark.sql as ps
 from pyspark.sql import SparkSession, DataFrame
@@ -127,6 +128,9 @@ class SparkCSVDataReader(DataReader):
             # RADAR_NEW: uid/variable/yyyymm/yyyymmdd.csv.gz
             "RADAR_NEW": re.compile(r"""^[\w-]+/([\w]+)/
                                     [\d]+/([\d]+.csv.gz$|schema-\1.json$)""", re.X),
+            # RADAR_OLD: uid/questionnaire/QuestionaireName/yyyymm/yyyymmdd.csv.gz
+            "RADAR_QUES": re.compile(r"""^[\w-]+/([\w]+)/([\w]+)/
+                                    [\d]+/([\d]+.csv.gz$|schema-\1.json$)""", re.X)
         }
         self.required_data = required_data
         self.df_type = df_type
@@ -141,16 +145,15 @@ class SparkCSVDataReader(DataReader):
         """
         Returns the source type of the data
         """
-        files = [y for x in os.walk(source_path) for y in
-                 glob(os.path.join(x[0], '*.*'))]
         if source_path[-1] != "/":
             source_path = source_path + "/"
-        for key, value in self.source_formats.items():
-            file = files[0]
-            file_format = file.replace(source_path, "")
-            if re.match(value, file_format):
-                return key
-        raise ValueError("Source type not recognized")
+        for x in os.walk(source_path, topdown=False):
+            for file in glob(os.path.join(x[0], '*.*')):
+                for key, value in self.source_formats.items():
+                    file_format = file.replace(source_path, "")
+                    if re.match(value, file_format):
+                        return key
+        raise ValueError("Source path not recognized")
 
     def read_data(self) -> RadarData:
         """
@@ -172,7 +175,7 @@ class SparkCSVDataReader(DataReader):
                 logger.info("Reading data from old RADAR format")
                 radar_data, user_data_dict = self._read_data_from_old_format(
                     source_path_item, user_data_dict)
-            elif source_type == "RADAR_NEW":
+            elif source_type == "RADAR_NEW" or source_type == "RADAR_QUES":
                 logger.info("Reading data from new RADAR format")
                 radar_data, user_data_dict = self._read_data_from_new_format(
                     source_path_item, user_data_dict)
@@ -269,7 +272,8 @@ class SparkCSVDataReader(DataReader):
         uids = self._remove_hidden_dirs(uids)
         if self.user_sampler is not None:
             uids = self.user_sampler.sample_uids(uids)
-        for uid in uids:
+
+        def process_uid(uid):
             logger.info(f"Reading data for user: {uid}")
             variable_data_dict = {}
             for dirname in self.required_data:
@@ -297,6 +301,9 @@ class SparkCSVDataReader(DataReader):
                 if variable_data.get_data_size() > 0:
                     variable_data_dict[dirname] = variable_data
             user_data_dict[uid] = RadarUserData(variable_data_dict, self.df_type)
+
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            executor.map(process_uid, uids)
         radar_data = RadarData(user_data_dict, self.df_type)
         return radar_data, user_data_dict
 
@@ -306,14 +313,15 @@ class SparkCSVDataReader(DataReader):
         uids = self._remove_hidden_dirs(uids)
         if self.user_sampler is not None:
             uids = self.user_sampler.sample_uids(uids)
-        for uid in uids:
+
+        def process_uid(uid):
             # Skip hidden files
             if uid[0] == ".":
-                continue
+                return
             logger.info(f"Reading data for user: {uid}")
             variable_data_dict = {}
             for dirname in self.required_data:
-                if dirname not in os.listdir(os.path.join(source_path, uid)):
+                if not os.path.exists(os.path.join(source_path, uid, dirname)):
                     continue
                 logger.info(f"Reading data for variable: {dirname}")
                 data_files = []
@@ -341,6 +349,9 @@ class SparkCSVDataReader(DataReader):
                 if variable_data.get_data_size() > 0:
                     variable_data_dict[dirname] = variable_data
             user_data_dict[uid] = RadarUserData(variable_data_dict, self.df_type)
+
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            executor.map(process_uid, uids)
         radar_data = RadarData(user_data_dict, self.df_type)
         return radar_data, user_data_dict
 
@@ -369,6 +380,8 @@ class AvroSchemaReader(SchemaReader):
         bool
             True if schema is present, False otherwise
         """
+        if "/" in schema_dir_base:
+            schema_dir_base = schema_dir_base.split("/")[0]
         schema_file = os.path.join(
             schema_dir, f"schema-{schema_dir_base}.json"
         )
@@ -378,6 +391,9 @@ class AvroSchemaReader(SchemaReader):
         return False
 
     def get_schema(self, schema_dir, schema_dir_base) -> StructType:
+
+        if "/" in schema_dir_base:
+            schema_dir_base = schema_dir_base.split("/")[0]
         if schema_dir_base in self.schema_dict:
             return self.schema_dict[schema_dir_base]
         else:
