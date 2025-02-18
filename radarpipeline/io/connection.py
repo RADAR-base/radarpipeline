@@ -154,6 +154,8 @@ class SftpConnector():
         self._sftp_live = False
         self._transport = None
         self._transport = paramiko.Transport((host, port))
+        self._transport.banner_timeout=200
+        self._transport.auth_timeout=200
         self._transport.use_compression(False)
         private_key_pass = None
         self._set_authentication(password, private_key, private_key_pass)

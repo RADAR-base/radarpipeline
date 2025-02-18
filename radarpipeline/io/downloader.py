@@ -6,6 +6,7 @@ from multiprocessing import Pool
 from functools import partial
 from datetime import datetime
 from radarpipeline.io.connection import SftpConnector
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -41,18 +42,18 @@ class SftpDataReader():
         sftp_connection_args["host"] = self.config_dict.get('sftp_host')
         sftp_connection_args["private_key"] = self.config_dict.get('sftp_private_key')
         all_participants_ids = self._get_all_id_sftp(sftp_source_path)
-        func = partial(self._fetch_data, self.root_dir, sftp_source_path,
-                       self.variables)
         try:
             func = partial(self._fetch_data, self.root_dir, sftp_source_path,
                            self.variables)
             with Pool(os.cpu_count()) as p:
-                p.map(func, all_participants_ids)
+                r = p.map_async(func, all_participants_ids)
+                r.wait()
         except Exception as e:
             logger.warn(f"Cannot use parallel processing to download the data from \
                 sftp.Error: {e}")
             logger.warn("Downloading the data from sftp sequentially. \
                         This may take a while...")
+            time.sleep(10)
             for uid in all_participants_ids:
                 self._fetch_data(self.root_dir, sftp_source_path, self.variables, uid)
         logger.info(f"Data read from sftp and stored in {self.root_dir} folder")
