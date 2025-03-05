@@ -7,6 +7,7 @@ from functools import partial
 from datetime import datetime
 from radarpipeline.io.connection import SftpConnector
 import time
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -119,8 +120,11 @@ class SftpDataReader():
 
     def _get_all_id_sftp(self, sftp_source_path):
         sftp = SftpConnector(self.config_dict, self.variables)
+        uuid_pattern = re.compile(
+            r'^.{8}-.{4}-.{4}-.{4}-.{12}$')
         sftp.connect()
         with sftp.cd(sftp_source_path + '/'):
-            ids = [x for x in sftp.listdir() if x[0] != "."]
+            ids = [directory for directory in sftp.listdir()
+                   if uuid_pattern.match(directory)]
         sftp.close()
         return ids

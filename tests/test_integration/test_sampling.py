@@ -34,7 +34,7 @@ class TestSampling(unittest.TestCase):
 
     def get_config_output(self, config):
         project = Project(input_data=config)
-        project.fetch_data()
+        project.read_data()
         project.compute_features()
         output_data = project.features
         project.close_spark_session()

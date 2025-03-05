@@ -381,3 +381,18 @@ class ConfigValidator():
             sampling_config["config"] = self._validate_sampling_time_instance(
                 sampling_config["config"])
         return sampling_config
+
+
+class ConfigGenerator():
+    def __init__(self, config_dict=None,
+                 path="./config.yaml") -> None:
+        self.config = config_dict
+
+    def generate_config(self):
+        pass
+
+    def _get_default_config(self):
+        pass
+
+    def save_config(self):
+        pass

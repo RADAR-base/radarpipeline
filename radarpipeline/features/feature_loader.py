@@ -45,6 +45,6 @@ class FeatureLoader():
         """
         Load the features from the source path and return the data
         """
-        self.project.fetch_data()
+        self.project.read_data()
         self.project.compute_features()
         return self.project.features

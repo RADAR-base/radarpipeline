@@ -40,10 +40,7 @@ class Project:
             os.path.join("radarpipeline", "features", "features")
         )
         self.features = {}
-        self.config = self._get_config()
-        self.validator = ConfigValidator(self.config, self.valid_input_formats,
-                                         self.valid_output_formats)
-        self.validator.validate()
+        self.validate()
         self.feature_groups = self._get_feature_groups()
         self.total_required_data = self._get_total_required_data()
         if "spark_config" not in self.config:
@@ -53,6 +50,12 @@ class Project:
 
     def close_spark_session(self):
         self.spark_engine.close_spark_session()
+
+    def validate(self):
+        self.config = self._get_config()
+        self.validator = ConfigValidator(self.config, self.valid_input_formats,
+                                         self.valid_output_formats)
+        self.validator.validate()
 
     def _resolve_input_data(self, input_data) -> str:
         """
@@ -229,10 +232,11 @@ class Project:
         logger.info(f"Total required data: {total_required_data}")
         return list(total_required_data)
 
-    def fetch_data(self) -> None:
+    def read_data(self) -> None:
         """
-        Fetches the data from the data source
+        Read the data from the data source
         """
+        self.fetch_data()
         if self.config["input"]["source_type"] == "local":
             datareader = Reader(
                 self.spark_session,
@@ -241,27 +245,34 @@ class Project:
                 self.config["configurations"]["df_type"],
             )
             self.data = datareader.read_data()
-
         elif self.config["input"]["source_type"] == "mock":
+            datareader = Reader(
+                self.spark_session,
+                self.mock_config,
+                self.total_required_data,
+                self.config["configurations"]["df_type"],
+            )
+            self.data = datareader.read_data()
+        else:
+            raise ValueError("Wrong data location")
+
+    def fetch_data(self) -> None:
+        """
+        Fetch the data from the data source
+        """
+        if self.config["input"]["source_type"] == "mock":
             MOCK_URL = "https://github.com/RADAR-base-Analytics/mockdata"
             cache_dir = os.path.join(
                 os.path.expanduser("~"), ".cache", "radarpipeline", "mockdata")
             if not os.path.exists(cache_dir):
                 Repo.clone_from(MOCK_URL, cache_dir)
             mock_data_directory = os.path.join(cache_dir, "mockdata")
-            mock_config = {
+            self.mock_config = {
                 "input": {
                     "config": {
                         "source_path": mock_data_directory},
                     "data_format": "csv"}}
-            mock_config["configurations"] = self.config["configurations"]
-            datareader = Reader(
-                self.spark_session,
-                mock_config,
-                self.total_required_data,
-                self.config["configurations"]["df_type"],
-            )
-            self.data = datareader.read_data()
+            self.mock_config["configurations"] = self.config["configurations"]
 
         elif self.config["input"]["source_type"] == "sftp":
             sftp_data_reader = SftpDataReader(self.config["input"]["config"],
@@ -276,14 +287,6 @@ class Project:
                     "source_path": root_dir
                 },
             }
-
-            datareader = Reader(
-                self.spark_session,
-                self.config,
-                self.total_required_data,
-                self.config["configurations"]['df_type'],
-            )
-            self.data = datareader.read_data()
         else:
             raise ValueError("Wrong data location")
 

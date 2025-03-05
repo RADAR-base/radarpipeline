@@ -1,8 +1,11 @@
 import logging
 import sys
 import traceback
-from typing import Dict, Union
+from typing import Dict, Union, List
 from radarpipeline import Project
+from radarpipeline.io import CustomDataReader
+from radarpipeline.project.validations import ConfigGenerator
+
 from radarpipeline.common.logger import logger_init
 
 logger_init()
@@ -21,7 +24,7 @@ def run(config_path: Union[str, Dict] = "config.yaml"):
         logger.info("Reading and Validating the configuration file...")
         project = Project(input_data=config_path)
         logger.info("Fetching the data...")
-        project.fetch_data()
+        project.read_data()
         logger.info("Computing the features...")
         project.compute_features()
         logger.info("Exporting the features data...")
@@ -32,6 +35,64 @@ def run(config_path: Union[str, Dict] = "config.yaml"):
     except KeyboardInterrupt:
         logger.info("Pipeline run interrupted by user")
         sys.exit(0)
+    except Exception:
+        logger.info(traceback.format_exc())
+        sys.exit(1)
+
+
+def validate(config: Union[str, Dict]):
+    """
+    Validate the configuration file.
+    """
+    try:
+        logger.info("Validating the configuration file...")
+        project = Project(input_data=config)
+        project.validate()
+        logger.info("Configuration file is valid")
+    except Exception:
+        logger.info(traceback.format_exc())
+        sys.exit(1)
+
+
+def generate_config(config_path: str = "./config.yaml", config_dict: Dict = None):
+    """
+    Generate a sample configuration file.
+    """
+    try:
+        logger.info("Generating a sample configuration file...")
+        generator = ConfigGenerator()
+        generator.generate_config(config_dict, config_path)
+        logger.info(f"Sample configuration file generated at {config_path}")
+    except Exception:
+        logger.info(traceback.format_exc())
+        sys.exit(1)
+
+
+def read(source_path: str, variables: Union[str, List[str]]):
+    """
+    Read data from a source.
+    """
+    try:
+        logger.info("Reading data...")
+        data = CustomDataReader(source_path, variables,
+                                source_type="local",
+                                data_format="csv", df_type="pandas")
+        logger.info("Data read successfully")
+        return data
+    except Exception:
+        logger.info(traceback.format_exc())
+        sys.exit(1)
+
+
+def fetch(config: Union[Dict, str]):
+    """
+    Fetch data from a source.
+    """
+    try:
+        logger.info("Fetching data...")
+        project = Project(input_data=config)
+        project.read_data()
+        logger.info("Data fetched successfully")
     except Exception:
         logger.info(traceback.format_exc())
         sys.exit(1)
