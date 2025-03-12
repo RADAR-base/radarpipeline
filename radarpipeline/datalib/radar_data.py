@@ -100,7 +100,10 @@ class RadarData(Data):
                 variable_data_list.append(combined_df)
 
         if is_only_one_var:
-            return variable_data_list[0]
+            if len(variable_data_list) > 0:
+                return variable_data_list[0]
+            else:
+                raise ValueError(f"No data found for the variable {variables}")
         else:
             return variable_data_list
 
