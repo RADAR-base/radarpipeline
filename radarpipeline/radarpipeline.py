@@ -91,11 +91,126 @@ def fetch(config: Union[Dict, str]):
     try:
         logger.info("Fetching data...")
         project = Project(input_data=config)
-        project.read_data()
+        project.fetch_data()
         logger.info("Data fetched successfully")
     except Exception:
         logger.info(traceback.format_exc())
         sys.exit(1)
+
+
+def convert_from_dict(config: Dict):
+    """
+    Convert data from one format to another.
+    """
+    """
+    Pipeline entry point.
+    config_path could be a local path to a configuration file
+    or a remote url to a configuration file.
+    """
+    try:
+        logger.info("Starting the pipeline run...")
+        logger.info("Reading and Validating the configuration file...")
+        project = Project(input_data=config)
+        logger.info("Fetching the data...")
+        project.read_data()
+        logger.info("Computing the features...")
+        project.compute_features()
+        logger.info("Exporting the features data...")
+        project.export_data()
+        logger.info("Data exported successfully. Closing Spark Engine")
+        project.close_spark_session()
+        logger.info("Pipeline run completed successfully")
+    except KeyboardInterrupt:
+        logger.info("Pipeline run interrupted by user")
+        sys.exit(0)
+    except Exception:
+        logger.info(traceback.format_exc())
+        sys.exit(1)
+
+
+def convert(yaml_path: str = None,
+            source_path: str = None,
+            destination_path: str = None,
+            variables: List = None, data_format: str = "csv",
+            needs_download=False, download_config=None):
+    """_summary_
+
+    Args:
+        source_path (str): Path to the source file.
+        destination_path (str): Path to the destination file.
+        data_format (str, optional): Format of the data. Defaults to "csv".
+        needs_download (bool, optional): Whether the data needs to be downloaded.
+        Defaults to False.
+        download_config (dict, optional): Configuration for downloading the data.
+        Defaults to None.
+    Reads the data from the source and converts it into a tabular format and saves it.
+    """
+    try:
+        if yaml_path:
+            run(yaml_path)
+        else:
+            if source_path is None:
+                logger.info("Source path is required")
+                sys.exit(1)
+            elif destination_path is None:
+                logger.info("Destination path is required")
+                sys.exit(1)
+            elif variables is None:
+                logger.info("Variables are required")
+                sys.exit(1)
+            elif not isinstance(variables, list):
+                if isinstance(variables, str):
+                    variables = [variables]
+                else:
+                    logger.info("Variables should be a list")
+                    sys.exit(1)
+                if len(variables) == 0:
+                    logger.info("Variables should not be empty")
+                    sys.exit(1)
+            else:
+                logger.info("Reading data...")
+                config_dict = _generate_tabular_config(source_path,
+                                                       destination_path,
+                                                       variables,
+                                                       data_format,
+                                                       needs_download,
+                                                       download_config)
+                run(config_dict)
+    except Exception:
+        logger.info(traceback.format_exc())
+        sys.exit(1)
+
+
+def _generate_tabular_config(source_path: str,
+                             destination_path: str,
+                             variables: List, data_format: str,
+                             needs_download, download_config):
+    """
+    Generate a configuration dictionary for converting data to tabular format.
+    """
+    config_dict = {
+        "input": {
+            "config": {
+                "source_path": source_path
+            }
+        },
+        "output": {
+            "output_location": destination_path
+        },
+        "configurations": {
+            "df_type": "pandas"
+        }
+    }
+    if needs_download:
+        config_dict["input"]["download"] = download_config
+    config_dict["features"] = [
+        {
+            "location": "custom",
+            "feature_groups": ["Tabularize"],
+            "feature_names": variables
+        }
+    ]
+    return config_dict
 
 
 def _gather_clone_urls(organization, no_forks=True):

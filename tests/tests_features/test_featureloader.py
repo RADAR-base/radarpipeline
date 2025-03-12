@@ -57,7 +57,9 @@ class TestFeatureLoader(unittest.TestCase):
 
     def test_load_custom_features(self):
         config = {
-            "input": {"config": {"source_path": self.PATH}},
+            "input": {"config": {"source_path": self.PATH
+                                 }
+                      },
             "features": [
                 {
                     "location": "custom",
