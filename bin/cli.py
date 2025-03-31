@@ -3,6 +3,8 @@ The command-line interface for the radarpipeline
 """
 import argparse
 from radarpipeline import radarpipeline
+import warnings
+warnings.filterwarnings("ignore")
 
 
 def main():
@@ -34,6 +36,11 @@ def main():
     generate_parser = subparsers.add_parser(
         "generate",
         help="Generates a mock config file to run radarpipeline")
+
+    generate_parser.add_argument(
+        "--config", "-f",
+        help="Destination of config.yaml file"
+    )
     generate_parser.set_defaults(func=radarpipeline.generate_config)
 
     # Subparser for 'fetch' command
@@ -53,7 +60,7 @@ def main():
     # Mutually exclusive group for source path or config file
     source_group = convert_parser.add_mutually_exclusive_group()
     source_group.add_argument(
-        "--source_path",
+         "--source_path", "-s",
         help="Path to the source data to be converted"
     )
     source_group.add_argument(
@@ -63,18 +70,18 @@ def main():
 
     # Additional arguments for conversion
     convert_parser.add_argument(
-        "--dest_path",
+        "--dest_path", "-d",
         help="Path where the converted data will be saved",
         default="./"
     )
     convert_parser.add_argument(
-        "--variables",
+        "--variables", "-v",
         help="Variables to be converted",
         required=True,
         nargs='+'
     )
     convert_parser.add_argument(
-        "--dest_format",
+        "--dest_format", "-df",
         help="Format to convert the data into",
         default="csv"
     )

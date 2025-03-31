@@ -1,5 +1,6 @@
 import unittest
-from radarpipeline import radarpipeline, Project
+from radarpipeline.project import Project
+from radarpipeline.radarpipeline import radarpipeline
 from strictyaml.exceptions import YAMLValidationError
 import pathlib as pl
 import os

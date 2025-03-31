@@ -2,9 +2,10 @@ import logging
 import sys
 import traceback
 from typing import Dict, Union, List
-from radarpipeline import Project
+from radarpipeline.project import Project
 from radarpipeline.io import CustomDataReader
 from radarpipeline.project.validations import ConfigGenerator
+import yaml
 
 from radarpipeline.common.logger import logger_init
 
@@ -60,8 +61,9 @@ def generate_config(config_path: str = "./config.yaml", config_dict: Dict = None
     """
     try:
         logger.info("Generating a sample configuration file...")
-        generator = ConfigGenerator()
-        generator.generate_config(config_dict, config_path)
+        generator = ConfigGenerator(config_dict, config_path)
+        config = generator.generate_config()
+        yaml.dump(config, open(config_path, "w"))
         logger.info(f"Sample configuration file generated at {config_path}")
     except Exception:
         logger.info(traceback.format_exc())
@@ -74,9 +76,12 @@ def read(source_path: str, variables: Union[str, List[str]]):
     """
     try:
         logger.info("Reading data...")
-        data = CustomDataReader(source_path, variables,
-                                source_type="local",
-                                data_format="csv", df_type="pandas")
+        input_config = {"source_path": source_path}
+        data_reader = CustomDataReader(input_config, variables,
+                                       source_type="local",
+                                       data_format="csv",
+                                       df_type="pandas")
+        data = data_reader.read_data()
         logger.info("Data read successfully")
         return data
     except Exception:
@@ -189,13 +194,23 @@ def _generate_tabular_config(source_path: str,
     Generate a configuration dictionary for converting data to tabular format.
     """
     config_dict = {
+        "project": {
+            "project_name": "tabularise",
+            "description": "custom function to tabularise the data",
+            "version": "0.0.0"},
         "input": {
+            "source_type": "local",
             "config": {
                 "source_path": source_path
-            }
+            },
+            "data_format": "csv"
         },
         "output": {
-            "output_location": destination_path
+            "output_location": "local",
+            "config": {
+                "target_path": destination_path
+            },
+            "data_format": data_format,
         },
         "configurations": {
             "df_type": "pandas"
@@ -207,7 +222,7 @@ def _generate_tabular_config(source_path: str,
         {
             "location": "custom",
             "feature_groups": ["Tabularize"],
-            "feature_names": variables
+            "feature_names": [variables]
         }
     ]
     return config_dict

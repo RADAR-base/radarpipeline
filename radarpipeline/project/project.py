@@ -287,6 +287,16 @@ class Project:
                     "source_path": root_dir
                 },
             }
+        elif self.config["input"]["source_type"] == "local":
+            # check if source_path is a directory 
+            # if not, raise an error
+            source_path = self.config["input"]["config"]["source_path"]
+            if not os.path.exists(source_path):
+                raise ValueError(f"Source path does not exist: {source_path}")
+            if os.path.isdir(source_path):
+                # check if there are any files in the directory
+                if not os.listdir(source_path):
+                    raise ValueError(f"Source path is empty: {source_path}")
         else:
             raise ValueError("Wrong data location")
 
