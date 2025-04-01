@@ -288,7 +288,7 @@ class Project:
                 },
             }
         elif self.config["input"]["source_type"] == "local":
-            # check if source_path is a directory 
+            # check if source_path is a directory
             # if not, raise an error
             source_path = self.config["input"]["config"]["source_path"]
             if not os.path.exists(source_path):

@@ -70,7 +70,8 @@ class Reader():
     reader.get_user_data(user_id=..)
     '''
     def __init__(self, spark_session: ps.SparkSession,
-                 config: Dict, required_data: Union[str, List[str]], df_type: str = "pandas"):
+                 config: Dict, required_data: Union[str, List[str]],
+                 df_type: str = "pandas"):
         """_summary_
 
         Args:
