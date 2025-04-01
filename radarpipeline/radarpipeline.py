@@ -8,6 +8,7 @@ from radarpipeline.project.validations import ConfigGenerator
 import yaml
 
 from radarpipeline.common.logger import logger_init
+import requests
 
 logger_init()
 
@@ -248,13 +249,31 @@ def show_available_pipelines():
     Uses git to show the available pipelines from
     https://github.com/RADAR-base-Analytics/
     """
-    """
-    # Still in progress. not working yet
-    clone_urls = _gather_clone_urls("RADAR-base-Analytics")
-    print(clone_urls)
-    return clone_urls
-    # read all the repos from https://github.com/RADAR-base-Analytics/
-    """
+    try:
+        logger.info(
+            "Fetching available pipelines from "
+            "RADAR-base-Analytics GitHub organization..."
+        )
+        api_url = "https://api.github.com/orgs/RADAR-base-Analytics/repos"
+        response = requests.get(api_url)
+        if response.status_code == 200:
+            repos = response.json()
+            pipelines = [
+                {"url": repo["html_url"],
+                 "name": repo["name"],
+                 "description": repo.get("description", "No description available")}
+                for repo in repos if not repo.get("fork", False)]
+            logger.info(f"Found {len(pipelines)} available pipelines.")
+            return pipelines
+        else:
+            logger.error(
+                f"Failed to fetch repositories: {response.status_code} - "
+                f"{response.text}"
+            )
+            return []
+    except Exception as e:
+        logger.error(f"An error occurred while fetching pipelines: {e}")
+        return []
 
 
 if __name__ == "__main__":

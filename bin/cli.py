@@ -21,7 +21,7 @@ def main():
     )
     run_parser.set_defaults(func=radarpipeline.run)
 
-    # Subparser for 'validate' command
+    # Subparser for 'validatååe' command
     validate_parser = subparsers.add_parser(
         "validate",
         help="Validate config file to run radarpipeline")
@@ -60,7 +60,7 @@ def main():
     # Mutually exclusive group for source path or config file
     source_group = convert_parser.add_mutually_exclusive_group()
     source_group.add_argument(
-         "--source_path", "-s",
+        "--source_path", "-s",
         help="Path to the source data to be converted"
     )
     source_group.add_argument(
@@ -87,6 +87,9 @@ def main():
     )
 
     convert_parser.set_defaults(func=radarpipeline.convert)
+    # Subparser for 'list' command
+    list_parser = subparsers.add_parser("list", help="List available Pipelines")
+    list_parser.set_defaults(func=radarpipeline.show_available_pipelines)
 
     args = parser.parse_args()
     if 'config' in args:
@@ -96,6 +99,15 @@ def main():
                   variables=args.variables, data_format=args.dest_format)
     elif args.command == "generate":
         args.func()
+    elif args.command == "list":
+        pipelines = radarpipeline.show_available_pipelines()
+        # print the list of pipelines in a readable table format for terminal
+        # Pipeliness is a list of dict with keys name, url and description
+        print("{:<30} {:<60} {:<40}".format("Name", "URL", "Description"))
+        print("=" * 130)
+        for pipeline in pipelines:
+            print("{:<30} | {:<60} | {:<40}".format(
+                pipeline["name"], pipeline["url"], pipeline["description"]))
     elif args.command is None:
         parser.print_help()
     else:
