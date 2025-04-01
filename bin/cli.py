@@ -96,6 +96,8 @@ def main():
                   variables=args.variables, data_format=args.dest_format)
     elif args.command == "generate":
         args.func()
+    elif args.command is None:
+        parser.print_help()
     else:
         raise ValueError("Invalid arguments")
 
