@@ -295,6 +295,34 @@ class TestIntegration(unittest.TestCase):
                            .reset_index(drop=True))
         path.unlink()
 
+    def test_compute_features(self):
+        # Test the compute_features function
+        input_config={
+            "source_type": "local",
+            "config": {
+                "source_path": "mockdata/mockdata"
+            },
+            "data_format": "csv"
+        }
+        feature_config={
+            "location": "custom",
+            "feature_groups": ["Tabularize"],
+            "feature_names": [["android_phone_battery_level"]]
+        }
+        output = radarpipeline.compute_features(input_config, feature_config)
+        actual_df = output['TabularizeFeatures']['android_phone_battery_level']
+        expected_output_path = "tests/resources/expected_output/tabular"
+        expected_df = pd.read_csv(
+            os.path.join(expected_output_path,
+                         "tabularize_features_android_phone_battery_level.csv"))
+        expected_df['value.time'] = pd.to_datetime(expected_df['value.time']).astype("datetime64[us]")
+        expected_df['value.timeReceived'] = pd.to_datetime(
+            expected_df['value.timeReceived']).astype("datetime64[us]")
+        assert_frame_equal(expected_df.sort_values(['key.userId', 'value.time'])
+                           .reset_index(drop=True),
+                           actual_df.sort_values(['key.userId', 'value.time'])
+                           .reset_index(drop=True), check_datetimelike_compat=True)
+
     def tearDown(self):
         # Delete the output directory after the test
         # check if self.output_dir

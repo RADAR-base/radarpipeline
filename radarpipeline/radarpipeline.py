@@ -186,6 +186,67 @@ def convert(yaml_path: str = None,
         logger.info(traceback.format_exc())
         sys.exit(1)
 
+def _modify_config(config):
+    """
+    Modify the input configuration to include the variables of interest
+    """
+    if "project" not in config:
+        config["project"] = {
+            "project_name": "custom",
+            "description": "custom",
+            "version": "custom"
+        }
+    if "input" not in config:
+        raise ValueError("Input configuration is missing")
+    if "source_type" not in config["input"]:
+        config["input"]["source_type"] = "local"
+    if "data_format" not in config["input"]:
+        config["input"]["data_format"] = "csv"
+    if "output" not in config:
+        config["output"] = {
+            "output_location": "dataframe",
+            "config": {},
+            "data_format": "csv",
+            "compress": False
+        }
+    if "configurations" not in config:
+        config['configurations'] = {}
+        config['configurations']['df_type'] = "pandas"
+    return config
+
+def compute_features(input_config: Dict,
+                 feature_config: Union[Dict, List[Dict]]):
+    """
+    Use input configuration and compute features.
+    Returns the features as a dictionary.
+    Args:
+        input_config (Dict): Input configuration dictionary.
+        feature_config (Union[Dict, List[Dict]]): Feature configuration dictionary or list of dictionaries.
+    Returns:
+        Dict: Dictionary containing the computed features.
+    Raises:
+        Exception: If there is an error in fetching the features.
+    """
+    try:
+        logger.info("Getting features...")
+        if isinstance(feature_config, dict):
+            feature_config = [feature_config]
+        config = {
+            "input": input_config,
+            "features": feature_config
+        }
+        # Modify the configuration to include the variables of interest
+        # and set default values for missing keys
+        config = _modify_config(config)
+        project = Project(input_data=config)
+        project.read_data()
+        project.compute_features()
+        data = project.features
+        logger.info("Features fetched successfully")
+        return data
+    except Exception:
+        logger.info(traceback.format_exc())
+        sys.exit(1)
 
 def _generate_tabular_config(source_path: str,
                              destination_path: str,
