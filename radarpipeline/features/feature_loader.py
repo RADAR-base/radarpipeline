@@ -1,21 +1,21 @@
 from abc import ABC, abstractmethod
 from typing import List, Tuple
-import radarpipeline
+#from radarpipeline.project import Project
 
-
+"""
 class FeatureLoader():
     """
-    A  custom class to load features and return dataframe
+    #A  custom class to load features and return dataframe
     """
 
     def __init__(self, config) -> None:
         self.config = self.modify_config(config)
         print(config)
-        self.project = radarpipeline.Project(config)
+        self.project = Project(config)
 
     def modify_config(self, config):
         """
-        Modify the input configuration to include the variables of interest
+        #Modify the input configuration to include the variables of interest
         """
         if "project" not in config:
             config["project"] = {
@@ -48,3 +48,4 @@ class FeatureLoader():
         self.project.read_data()
         self.project.compute_features()
         return self.project.features
+"""

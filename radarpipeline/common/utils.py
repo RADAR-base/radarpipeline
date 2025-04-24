@@ -3,20 +3,16 @@ from functools import reduce
 from typing import Any, Dict, List
 from urllib.parse import urlparse
 import pathlib
-from pathlib import Path
 
 import pyspark.sql as ps
 import requests
-import yaml
 from strictyaml import load, Map, Int, Str, Seq, Bool, Optional
-from strictyaml import YAMLError, CommaSeparated, MapPattern
+from strictyaml import CommaSeparated, MapPattern
 from dateutil import parser
 import ntpath
 import posixpath
 
 from radarpipeline.common import constants
-import unittest
-from radarpipeline.project.sparkengine import SparkEngine
 import pyspark.sql.functions as f
 from pyspark.sql.types import TimestampType
 
@@ -300,17 +296,3 @@ def convert_str_to_time(time):
         raise ValueError(
             "Invalid value for the key: time. It should be a valid time format"
         )
-
-
-class PySparkTestCase(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.spark_engine = SparkEngine()
-        cls.spark = cls.spark_engine.initialize_spark_session()
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.spark_engine.close_spark_session()
-
-    def preprocess_data(self, data):
-        return preprocess_time_data(data)

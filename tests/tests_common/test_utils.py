@@ -5,6 +5,11 @@ import os
 from radarpipeline.common.utils import is_valid_github_path, read_yaml
 from radarpipeline.common import utils
 from strictyaml.exceptions import YAMLValidationError
+import os
+import sys
+
+os.environ['PYSPARK_PYTHON'] = sys.executable
+os.environ['PYSPARK_DRIVER_PYTHON'] = sys.executable
 
 RADAR_PIPELINE_URL = "https://github.com/RADAR-base/radarpipeline"
 WRONG_GITHUB_URL = "https://githuib.com/RADAR-base/radarpipeline"
