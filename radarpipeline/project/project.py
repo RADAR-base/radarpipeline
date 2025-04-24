@@ -121,13 +121,13 @@ class Project:
         """
 
         features = self.config.get("features", [])
-        feature_groups = set()
+        feature_groups = []
 
         if "mock" in features:
             logger.info("Using mock features")
         else:
             for feature in features:
-                feature_groups.update(self._get_feature_group(feature))
+                feature_groups = feature_groups + self._get_feature_group(feature)
             feature_group_names = [
                 feature_group.name for feature_group in feature_groups
             ]
