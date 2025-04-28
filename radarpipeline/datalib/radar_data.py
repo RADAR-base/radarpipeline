@@ -50,7 +50,8 @@ class RadarData(Data):
         return self.get_data_keys()
 
     def get_combined_data_by_variable(
-        self, variables: Union[str, List[str]]
+        self, variables: Union[str, List[str]],
+        return_dict: bool = False
     ) -> Union[DataType, List[DataType]]:
         """
         Returns the combined data of the RADAR data for the given variables
@@ -76,6 +77,7 @@ class RadarData(Data):
 
         all_user_ids = self._get_all_user_ids()
         variable_data_list = []
+        variable_data_dict = {}
         variable_dict = {}
 
         # Store the data of the given variables of each user in a dictionary
@@ -97,12 +99,21 @@ class RadarData(Data):
                 combined_df = utils.combine_pyspark_dfs(variable_dict[var])
                 if self.df_type == "pandas":
                     combined_df = combined_df.toPandas()
-                variable_data_list.append(combined_df)
+                if return_dict:
+                    variable_data_dict[var] = combined_df
+                else:
+                    variable_data_list.append(combined_df)
 
         if is_only_one_var:
-            return variable_data_list[0]
+            if return_dict:
+                return variable_data_dict
+            else:
+                return variable_data_list[0]
         else:
-            return variable_data_list
+            if return_dict:
+                return variable_data_dict
+            else:
+                return variable_data_list
 
     def get_data_by_user_id(
         self, user_ids: Union[str, List[str]]

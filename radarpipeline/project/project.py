@@ -5,6 +5,7 @@ import os
 import pathlib
 import sys
 from typing import Any, Dict, List, Union
+import itertools
 
 from git.exc import GitCommandError
 from git.repo import Repo
@@ -217,8 +218,8 @@ class Project:
         List[str]
             List of all the required data
         """
-        self.computable_feature_names = [f['feature_names'][0] for
-                                         f in self.config["features"]]
+        self.computable_feature_names = list(itertools.chain(*[f['feature_names'] for
+                                         f in self.config["features"]]))
         total_required_data = set()
         for i, feature_group in enumerate(self.feature_groups):
             if self.computable_feature_names[i][0] == 'all' or feature_group.is_custom:
