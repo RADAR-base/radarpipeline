@@ -109,9 +109,9 @@ class RadarData(Data):
                 return variable_data_dict
             else:
                 if len(variable_data_list) > 0:
-                  return variable_data_list[0]
+                    return variable_data_list[0]
                 else:
-                  raise ValueError(f"No data found for the variable {variables}")
+                    raise ValueError(f"No data found for the variable {variables}")
         else:
             if return_dict:
                 return variable_data_dict
