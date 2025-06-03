@@ -70,7 +70,8 @@ class Reader():
     reader.get_user_data(user_id=..)
     '''
     def __init__(self, spark_session: ps.SparkSession,
-                 config: Dict, required_data: List[str], df_type: str = "pandas"):
+                 config: Dict, required_data: Union[str, List[str]],
+                 df_type: str = "pandas"):
         """_summary_
 
         Args:
@@ -118,8 +119,10 @@ class SparkCSVDataReader(DataReader):
     """
 
     def __init__(self, spark_session: ps.SparkSession,
-                 config: Dict, required_data: List[str], df_type: str = "pandas",
-                 user_sampler: UserSampler = None, data_sampler: DataSampler = None):
+                 config: Dict, required_data: Union[str, List[str]],
+                 df_type: str = "pandas",
+                 user_sampler: UserSampler = None,
+                 data_sampler: DataSampler = None):
         super().__init__(config)
         self.source_formats = {
             # RADAR_OLD: uid/variable/yyyymmdd_hh00.csv.gz
@@ -133,6 +136,8 @@ class SparkCSVDataReader(DataReader):
                                     [\d]+/([\d]+.csv.gz$|schema-\1.json$)""", re.X)
         }
         self.required_data = required_data
+        if isinstance(self.required_data, str):
+            self.required_data = [self.required_data]
         self.df_type = df_type
         self.source_path = self.config['input']['config'].get("source_path", "")
         self.user_sampler = user_sampler

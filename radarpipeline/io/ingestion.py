@@ -24,7 +24,7 @@ class CustomDataReader():
         Modify the input configuration to include the variables of interest
         """
         config = {'input': {}, "configurations": {}}
-        config['input'] = input_config
+        config['input']['config'] = input_config
         config['input']['data_format'] = data_format
         config['input']['source_type'] = self.source_type
         config['configurations']['df_type'] = "pandas"

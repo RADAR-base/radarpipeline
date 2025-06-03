@@ -50,7 +50,8 @@ class RadarData(Data):
         return self.get_data_keys()
 
     def get_combined_data_by_variable(
-        self, variables: Union[str, List[str]]
+        self, variables: Union[str, List[str]],
+        return_dict: bool = False
     ) -> Union[DataType, List[DataType]]:
         """
         Returns the combined data of the RADAR data for the given variables
@@ -68,44 +69,56 @@ class RadarData(Data):
         ]
             The combined data of the RADAR data for the given variables
         """
+        is_only_one_var, variables = self._normalize_variables(variables)
+        variable_dict = self._collect_variable_data(variables)
+        return self._combine_and_return_data(variable_dict, is_only_one_var,
+                                             return_dict)
 
-        is_only_one_var = False
-        if isinstance(variables, str):
-            is_only_one_var = True
+    def _normalize_variables(self, variables: Union[str, List[str]]):
+        is_only_one_var = isinstance(variables, str)
+        if is_only_one_var:
             variables = [variables]
+        return is_only_one_var, variables
 
-        all_user_ids = self._get_all_user_ids()
-        variable_data_list = []
+    def _collect_variable_data(self, variables: List[str]) -> Dict[str, List[DataType]]:
         variable_dict = {}
-
-        # Store the data of the given variables of each user in a dictionary
-        for user_id in all_user_ids:
+        for user_id in self._get_all_user_ids():
             user_data = self._get_data_by_key(user_id)
-            if user_data is not None:
-                user_variables = user_data._get_all_variables()
+            if user_data:
                 for var in variables:
-                    if var in user_variables:
+                    if var in user_data._get_all_variables():
                         var_data = user_data.get_data_by_variable(var)
-                        if var_data is not None:
-                            if var not in variable_dict:
-                                variable_dict[var] = []
-                            variable_dict[var].append(var_data.get_data())
+                        if var_data:
+                            variable_dict.setdefault(var, []).append(
+                                var_data.get_data())
+        return variable_dict
 
-        # Combine the all data for each variable
-        for var in variable_dict:
-            if len(variable_dict[var]) > 0:
-                combined_df = utils.combine_pyspark_dfs(variable_dict[var])
+    def _combine_and_return_data(
+        self, variable_dict: Dict[str, List[DataType]],
+        is_only_one_var: bool, return_dict: bool
+    ) -> Union[DataType, List[DataType]]:
+        variable_data_list = []
+        variable_data_dict = {}
+
+        for var, data_list in variable_dict.items():
+            if data_list:
+                combined_df = utils.combine_pyspark_dfs(data_list)
                 if self.df_type == "pandas":
                     combined_df = combined_df.toPandas()
-                variable_data_list.append(combined_df)
+                if return_dict:
+                    variable_data_dict[var] = combined_df
+                else:
+                    variable_data_list.append(combined_df)
 
         if is_only_one_var:
-            if len(variable_data_list) > 0:
+            if return_dict:
+                return variable_data_dict
+            elif variable_data_list:
                 return variable_data_list[0]
             else:
-                raise ValueError(f"No data found for the variable {variables}")
-        else:
-            return variable_data_list
+                raise ValueError(
+                    f"No data found for the variable {list(variable_dict.keys())}")
+        return variable_data_dict if return_dict else variable_data_list
 
     def get_data_by_user_id(
         self, user_ids: Union[str, List[str]]

@@ -9,6 +9,11 @@ from pandas.testing import assert_frame_equal
 from pyspark.sql import SparkSession
 from numpy.testing import assert_array_equal
 from pyspark_test import assert_pyspark_df_equal
+import os
+import sys
+
+os.environ['PYSPARK_PYTHON'] = sys.executable
+os.environ['PYSPARK_DRIVER_PYTHON'] = sys.executable
 
 
 class TestSparkDataWriter(unittest.TestCase):

@@ -381,3 +381,89 @@ class ConfigValidator():
             sampling_config["config"] = self._validate_sampling_time_instance(
                 sampling_config["config"])
         return sampling_config
+
+
+class ConfigGenerator():
+    def __init__(self, config_dict=None,
+                 path="./config.yaml") -> None:
+        self.config_dict = config_dict
+
+    def generate_config(self):
+        """
+        Generates a default configuration dictionary based on the provided format.
+        """
+        self.config = self._get_default_config()
+        # change default config based on the config dict
+        if self.config_dict:
+            for key, value in self.config_dict.items():
+                if key in self.config:
+                    if isinstance(value, dict) and isinstance(self.config[key], dict):
+                        self.config[key].update(value)
+                    else:
+                        self.config[key] = value
+        return self.config
+
+    def _get_default_config(self):
+        default_config = {
+            "project": {
+                "project_name": "mock_project",
+                "description": "mock_description",
+                "version": "mock_version",
+            },
+            "input": {
+                "source_type": "mock",  # could be mock, local, sftp, s3
+                "config": {
+                    "source_path": "mockdata/mockdata",  # Default for mock/local
+                },
+                "data_format": "csv",
+            },
+            "configurations": {
+                "df_type": "pandas",
+                # Uncomment and configure the following as needed
+                # "user_sampling": {
+                #     "method": "fraction",
+                #     "config": {
+                #         "fraction": 0.8,
+                #     },
+                # },
+                # "data_sampling": {
+                #     "method": "time",
+                #     "config": [
+                #         {
+                #             "starttime": "2018-11-22 00:00:00",
+                #             "endtime": "2018-11-26 00:00:00",
+                #             "time_column": "value.time",
+                #         },
+                #     ],
+                # },
+            },
+            "features": [
+                {
+                    "location": "https://github.com/RADAR-base-Analytics/mockfeatures",
+                    "branch": "main",
+                    "feature_groups": ["MockFeatureGroup"],
+                    "feature_names": ["all"],
+                },
+                # Uncomment and configure the following for custom features
+                # {
+                #     "location": "custom",
+                #     "feature_groups": ["Tabularize"],
+                #     "feature_names": [
+                #         "android_phone_battery_level",
+                #         "android_phone_step_count",
+                #     ],
+                # },
+            ],
+            "output": {
+                "output_location": "local",  # can be local, postgres, sftp
+                "config": {
+                    "target_path": "output/mockdata/",
+                },
+                "data_format": "csv",
+                "compress": False,
+            },
+        }
+        return default_config
+
+    def save_config(self):
+        pass

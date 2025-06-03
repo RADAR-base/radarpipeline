@@ -5,6 +5,11 @@ import os
 from radarpipeline.common.utils import is_valid_github_path, read_yaml
 from radarpipeline.common import utils
 from strictyaml.exceptions import YAMLValidationError
+import os
+import sys
+
+os.environ['PYSPARK_PYTHON'] = sys.executable
+os.environ['PYSPARK_DRIVER_PYTHON'] = sys.executable
 
 RADAR_PIPELINE_URL = "https://github.com/RADAR-base/radarpipeline"
 WRONG_GITHUB_URL = "https://githuib.com/RADAR-base/radarpipeline"
@@ -83,6 +88,7 @@ class TestReadYaml(unittest.TestCase):
         self.TESTDATA_FILENAME_USER_SAMPLING = "tests/resources/test_yamls/test_config_user_sampling.yaml"
         self.TESTDATA_FILENAME_DATA_SAMPLING = "tests/resources/test_yamls/test_config_date_sampling.yaml"
         self.TESTDATA_FILENAME_ALL_SAMPLING = "tests/resources/test_yamls/test_config_all_sampling.yaml"
+
     def test_read_correct_yaml(self):
         config = read_yaml(self.TESTDATA_FILENAME)
         expected_config = {

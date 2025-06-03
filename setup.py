@@ -10,7 +10,7 @@ def read_file(filename):
 
 setup(
     name="radarpipeline",
-    version="2.1.0",
+    version="2.2.0",
     license='Apache',
     description="A python feature generation and visualization package use with RADAR-base project data.",
     url="https://github.com/RADAR-base/radarpipeline",
@@ -45,4 +45,9 @@ setup(
         'Programming Language :: Python :: 3.11',
         'Programming Language :: Python :: 3.12',
     ],
+    entry_points={
+        "console_scripts": [
+            "radarpipeline = bin.cli:main",
+        ]
+    }
 )

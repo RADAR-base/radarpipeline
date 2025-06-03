@@ -44,16 +44,16 @@ class TestProject(unittest.TestCase):
             raise AssertionError("File does not exist: %s" % str(path))
 
     def test_fetch_data(self):
-        self.project.fetch_data()
+        self.project.read_data()
         self.assertTrue(self.project.data is not None, 'Data not fetched')
 
     def test_compute_features(self):
-        self.project.fetch_data()
+        self.project.read_data()
         self.project.compute_features()
         self.assertTrue(self.project.features is not None, 'Features not computed')
 
     def test_export_data(self):
-        self.project.fetch_data()
+        self.project.read_data()
         self.project.compute_features()
         self.project.export_data()
         self.output_dir = self.project.config['output']['config']['target_path']
