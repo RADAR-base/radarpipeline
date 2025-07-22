@@ -32,6 +32,16 @@ Wiki resources:
 
 ## How to run
 
+
+### Installation using PIP
+
+To install RADAR-pipeline, you can use the following command:
+
+```bash
+pip install radarpipeline
+```
+### Installation from source
+To install RADAR-pipeline from source, follow the steps below. This is the recommended way to install RADAR-pipeline if you want to contribute to the project or if you want to use the latest features that are not yet released on PyPI.
 > **Note**
 >
 > If you are using Windows, please install Spark and set environment variables as mentioned [here](https://sparkbyexamples.com/spark/apache-spark-installation-on-windows/) before going through the installation below. You'll need to set the environment variables given [here](https://spark.apache.org/docs/1.6.0/configuration.html#environment-variables).
