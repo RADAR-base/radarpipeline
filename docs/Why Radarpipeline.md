@@ -20,6 +20,10 @@ With YAML-based configuration files, your entire analysis pipeline becomes repro
 
 The modular feature-based architecture allows you to easily extend the pipeline with custom functionality while leveraging existing components.
 
+### 5. **Publishing Citable Pipelines**
+
+Radar-pipreline supports publishing citable pipelines, making it easy to share your research methods and results with the community. This enhances transparency and allows others to build upon your work.
+
 ## 🎯 Key Advantages
 
 ### **Flexibility Without Complexity**
