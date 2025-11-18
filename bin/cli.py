@@ -92,9 +92,9 @@ def main():
     list_parser.set_defaults(func=radarpipeline.show_available_pipelines)
 
     args = parser.parse_args()
-    if 'config' in args:
+    if 'config' in args and args.config is not None:
         args.func(args.config)
-    elif 'source_path' in args:
+    elif 'source_path' in args and args.source_path is not None:
         args.func(source_path=args.source_path, destination_path=args.dest_path,
                   variables=args.variables, data_format=args.dest_format)
     elif args.command == "generate":

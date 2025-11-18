@@ -23,7 +23,7 @@ setup(
     keywords=['mhealth', 'pipeline', 'big-data'],
     packages=find_packages(),
     install_requires=[
-        "twine==5.1.0",
+        "twine==6.2.0",
         "pyYaml==6.0.1",
         "pandas==2.2.2",
         "numpy==1.26.4",
