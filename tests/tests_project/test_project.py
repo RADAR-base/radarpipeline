@@ -44,16 +44,16 @@ class TestProject(unittest.TestCase):
             raise AssertionError("File does not exist: %s" % str(path))
 
     def test_fetch_data(self):
-        self.project.fetch_data()
+        self.project.read_data()
         self.assertTrue(self.project.data is not None, 'Data not fetched')
 
     def test_compute_features(self):
-        self.project.fetch_data()
+        self.project.read_data()
         self.project.compute_features()
         self.assertTrue(self.project.features is not None, 'Features not computed')
 
     def test_export_data(self):
-        self.project.fetch_data()
+        self.project.read_data()
         self.project.compute_features()
         self.project.export_data()
         self.output_dir = self.project.config['output']['config']['target_path']
@@ -71,6 +71,7 @@ class TestProject(unittest.TestCase):
         self.assertListEqual(sorted(required_data_output), sorted(expected_data))
 
     def tearDown(self) -> None:
+        self.project.close_spark_session()
         del self.project
 
 
@@ -94,7 +95,5 @@ class TestProjectRemoteLink(unittest.TestCase):
         project = Project(self.remotelink)
         project_config = project._get_config()
         schema = utils.get_yaml_schema()
-        print(project_config)
-        print(self.expected_config)
         expected_config_updated = as_document(self.expected_config, schema).data
         self.assertDictEqual(project_config, expected_config_updated)

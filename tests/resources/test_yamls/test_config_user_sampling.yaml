@@ -1,0 +1,69 @@
+project:
+    project_name: mock_project
+    description: mock_description
+    version: mock_version
+
+input:
+    source_type: mock # couldbe mock, local, sftp, s3
+    config:
+        # In case of sftp, use the following format
+        # sftp_host:
+        # sftp_source_path:
+        # sftp_username:
+        # sftp_private_key:
+        # sftp_target_path:
+        # In case of s3, use the following format
+        #       aws_access_key_id:
+        #       aws_secret_access_key:
+        #       region_name:
+        #       s3_access_url:
+        #       bucket:
+        #       prefix:
+        # In case of local or Mock, use the following format
+        source_path: mockdata/mockdata
+    data_format: csv
+
+configurations:
+    df_type: 'pandas'
+    user_sampling:
+        ## Possible methods: fraction, count, userid
+    #    method: fraction
+    #    config:
+    #        fraction: 0.8
+        #method: count
+        #config:
+        #    count: 2
+        method: userid
+        config:
+            userids:
+                - 2a02e53a-951e-4fd0-b47f-195a87096bd0
+    ## TODO: For future
+    #data_sampling:
+        ## Possible methods:  time, count, fraction
+        ## starttime and endtime format is dd-mm-yyyy hh:mm:ss in UTC timezone
+        #method: time
+        #config:
+        #   starttime: 2018-11-25 00:00:00
+        #   endtime:  2018-11-29 00:00:00
+        #   time_column: value.time
+        #method: count
+        #config:
+        #   count: 100
+        #method: fraction
+        #config:
+        #   fraction: 0.3
+
+features:
+    - location: 'https://github.com/RADAR-base-Analytics/mockfeatures'
+      branch: main
+      feature_groups:
+          - MockFeatureGroup
+      feature_names:
+        - all
+
+output:
+    output_location: local # can be local, postgres, sftp
+    config:
+        target_path: output/mockdata
+    data_format: csv
+    compress: false

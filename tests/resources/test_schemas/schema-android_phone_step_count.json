@@ -1,0 +1,94 @@
+{
+  "type" : "record",
+  "name" : "PhoneStepCount",
+  "namespace" : "org.radarcns.kafka.ObservationKey_org.radarcns.passive.phone",
+  "doc" : "combined key-value record",
+  "fields" : [ {
+    "name" : "key",
+    "type" : {
+      "type" : "record",
+      "name" : "ObservationKey",
+      "namespace" : "org.radarcns.kafka",
+      "doc" : "Key of an observation.",
+      "fields" : [ {
+        "name" : "projectId",
+        "type" : [ "null", {
+          "type" : "string",
+          "connect.doc" : "Project identifier. Null if unknown or the user is not enrolled in a project.",
+          "connect.parameters" : {
+            "avro.java.string" : "String"
+          },
+          "avro.java.string" : "String"
+        } ],
+        "doc" : "Project identifier. Null if unknown or the user is not enrolled in a project.",
+        "default" : null
+      }, {
+        "name" : "userId",
+        "type" : {
+          "type" : "string",
+          "connect.doc" : "User Identifier created during the enrolment.",
+          "connect.parameters" : {
+            "avro.java.string" : "String"
+          },
+          "avro.java.string" : "String"
+        },
+        "doc" : "User Identifier created during the enrolment."
+      }, {
+        "name" : "sourceId",
+        "type" : {
+          "type" : "string",
+          "connect.doc" : "Unique identifier associated with the source.",
+          "connect.parameters" : {
+            "avro.java.string" : "String"
+          },
+          "avro.java.string" : "String"
+        },
+        "doc" : "Unique identifier associated with the source."
+      } ],
+      "connect.doc" : "Key of an observation.",
+      "connect.version" : 1,
+      "connect.parameters" : {
+        "connect.record.doc" : "Key of an observation."
+      },
+      "connect.name" : "org.radarcns.kafka.ObservationKey"
+    },
+    "doc" : "Key of a Kafka SinkRecord"
+  }, {
+    "name" : "value",
+    "type" : {
+      "type" : "record",
+      "name" : "PhoneStepCount",
+      "namespace" : "org.radarcns.passive.phone",
+      "doc" : "Data from the step counter.",
+      "fields" : [ {
+        "name" : "time",
+        "type" : {
+          "type" : "double",
+          "connect.doc" : "Device timestamp in UTC (s)."
+        },
+        "doc" : "Device timestamp in UTC (s)."
+      }, {
+        "name" : "timeReceived",
+        "type" : {
+          "type" : "double",
+          "connect.doc" : "Device receiver timestamp in UTC (s)."
+        },
+        "doc" : "Device receiver timestamp in UTC (s)."
+      }, {
+        "name" : "steps",
+        "type" : {
+          "type" : "int",
+          "connect.doc" : "Number of steps taken between this and the previous record."
+        },
+        "doc" : "Number of steps taken between this and the previous record."
+      } ],
+      "connect.doc" : "Data from the step counter.",
+      "connect.version" : 1,
+      "connect.parameters" : {
+        "connect.record.doc" : "Data from the step counter."
+      },
+      "connect.name" : "org.radarcns.passive.phone.PhoneStepCount"
+    },
+    "doc" : "Value of a Kafka SinkRecord"
+  } ]
+}

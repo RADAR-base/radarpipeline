@@ -9,7 +9,7 @@ MOCK_CONFIG = {
         'description': 'mock_description',
         'version': 'mock_version'},
     'input': {
-        'data_type': 'mock',
+        'source_type': 'mock',
         'config': {
             'source_path': 'mockdata/mockdata'},
         'data_format': 'csv'},
@@ -40,7 +40,7 @@ class TestConfigValidatorInput(unittest.TestCase):
 
     def test_validate_sftp(self):
         config = self.mock_config
-        config['input']['data_type'] = 'sftp'
+        config['input']['source_type'] = 'sftp'
         config['input']['config'] = {
             "sftp_host": "mock_host",
             "sftp_source_path": "mock_source_path",
@@ -54,7 +54,7 @@ class TestConfigValidatorInput(unittest.TestCase):
 
     def test_validate_invalid_sftp(self):
         config = self.mock_config
-        config['input']['data_type'] = 'sftp'
+        config['input']['source_type'] = 'sftp'
         config['input']['config'] = {
             "sftp_host": "mock_host",
             "sftp_source_path": "mock_source_path",
@@ -68,7 +68,7 @@ class TestConfigValidatorInput(unittest.TestCase):
 
     def test_validate_local(self):
         config = self.mock_config
-        config['input']['data_type'] = 'local'
+        config['input']['source_type'] = 'local'
         config['input']['config'] = {
             "source_path": "mockdata/mockdata"
         }
@@ -78,7 +78,7 @@ class TestConfigValidatorInput(unittest.TestCase):
 
     def test_validate_local_wrong_source_path(self):
         config = self.mock_config
-        config['input']['data_type'] = 'local'
+        config['input']['source_type'] = 'local'
         config['input']['config'] = {
             "source_path": "xyz"
         }

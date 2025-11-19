@@ -6,6 +6,8 @@ from multiprocessing import Pool
 from functools import partial
 from datetime import datetime
 from radarpipeline.io.connection import SftpConnector
+import time
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -41,18 +43,18 @@ class SftpDataReader():
         sftp_connection_args["host"] = self.config_dict.get('sftp_host')
         sftp_connection_args["private_key"] = self.config_dict.get('sftp_private_key')
         all_participants_ids = self._get_all_id_sftp(sftp_source_path)
-        func = partial(self._fetch_data, self.root_dir, sftp_source_path,
-                       self.variables)
         try:
             func = partial(self._fetch_data, self.root_dir, sftp_source_path,
                            self.variables)
             with Pool(os.cpu_count()) as p:
-                p.map(func, all_participants_ids)
+                r = p.map_async(func, all_participants_ids)
+                r.wait()
         except Exception as e:
             logger.warn(f"Cannot use parallel processing to download the data from \
                 sftp.Error: {e}")
             logger.warn("Downloading the data from sftp sequentially. \
                         This may take a while...")
+            time.sleep(10)
             for uid in all_participants_ids:
                 self._fetch_data(self.root_dir, sftp_source_path, self.variables, uid)
         logger.info(f"Data read from sftp and stored in {self.root_dir} folder")
@@ -89,25 +91,20 @@ class SftpDataReader():
                                                 root_path, dir_path, src_file
                                             )
                                         ):
-                                            os.makedirs(
-                                                os.path.join(
-                                                    root_path, dir_path,
-                                                    src_file),
-                                                exist_ok=True)
-                                            sftp.get_d(src_file,
+                                            sftp.get_r(src_file,
                                                        os.path.join(
                                                            root_path,
-                                                           dir_path,
-                                                           src_file),
+                                                           dir_path),
                                                        preserve_mtime=True)
                         except FileNotFoundError:
-                            print("Folder not found: " + dir_path + "/" + src_file)
+                            logger.warning("Folder not found: " + dir_path
+                                           + "/" + src_file)
                             continue
                         except EOFError:
-                            print("EOFError: " + dir_path + "/" + src_file)
+                            logger.warning("EOFError: " + dir_path + "/" + src_file)
                             continue
         except FileNotFoundError:
-            print("Folder not found: " + uid)
+            logger.warning("Folder not found: " + uid)
             return
         sftp.close()
 
@@ -115,14 +112,19 @@ class SftpDataReader():
         if categories == "all":
             return True
         for category in categories:
+            if "/" in category:
+                category = category.split("/")[0]
             if src[:len(category)] == category:
                 return True
         return False
 
     def _get_all_id_sftp(self, sftp_source_path):
         sftp = SftpConnector(self.config_dict, self.variables)
+        uuid_pattern = re.compile(
+            r'^.{8}-.{4}-.{4}-.{4}-.{12}$')
         sftp.connect()
         with sftp.cd(sftp_source_path + '/'):
-            ids = [x for x in sftp.listdir() if x[0] != "."]
+            ids = [directory for directory in sftp.listdir()
+                   if uuid_pattern.match(directory)]
         sftp.close()
         return ids

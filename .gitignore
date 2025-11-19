@@ -137,7 +137,6 @@ log/
 
 # RADAR Directories
 data/
-features/
 temp/
 output/
 tmp/

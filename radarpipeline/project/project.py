@@ -5,15 +5,18 @@ import os
 import pathlib
 import sys
 from typing import Any, Dict, List, Union
+import itertools
 
 from git.exc import GitCommandError
 from git.repo import Repo
 
 from radarpipeline.common import utils
 from radarpipeline.features import Feature, FeatureGroup
-from radarpipeline.io import PandasDataWriter, SparkCSVDataReader, SparkDataWriter
+from radarpipeline.features.custom import Tabularize
+from radarpipeline.io import PandasDataWriter, SparkDataWriter, Reader
 from radarpipeline.io import SftpDataReader
 from radarpipeline.project.validations import ConfigValidator
+from radarpipeline.project.sparkengine import SparkEngine
 from strictyaml import load, YAMLError
 
 logger = logging.getLogger(__name__)
@@ -31,18 +34,29 @@ class Project:
         """
 
         self.valid_input_formats = ["csv", "csv.gz"]
-        self.valid_output_formats = ["csv"]
+        self.valid_output_formats = ["csv", "pickle", "parquet"]
+        self.custom_features = [Tabularize]
         self.input_data = self._resolve_input_data(input_data)
         self.feature_path = os.path.abspath(
             os.path.join("radarpipeline", "features", "features")
         )
         self.features = {}
+        self.validate()
+        self.feature_groups = self._get_feature_groups()
+        self.total_required_data = self._get_total_required_data()
+        if "spark_config" not in self.config:
+            self.config["spark_config"] = {}
+        self.spark_engine = SparkEngine(self.config['spark_config'])
+        self.spark_session = self.spark_engine.initialize_spark_session()
+
+    def close_spark_session(self):
+        self.spark_engine.close_spark_session()
+
+    def validate(self):
         self.config = self._get_config()
         self.validator = ConfigValidator(self.config, self.valid_input_formats,
                                          self.valid_output_formats)
         self.validator.validate()
-        self.feature_groups = self._get_feature_groups()
-        self.total_required_data = self._get_total_required_data()
 
     def _resolve_input_data(self, input_data) -> str:
         """
@@ -108,13 +122,13 @@ class Project:
         """
 
         features = self.config.get("features", [])
-        feature_groups = set()
+        feature_groups = []
 
         if "mock" in features:
             logger.info("Using mock features")
         else:
             for feature in features:
-                feature_groups.update(self._get_feature_group(feature))
+                feature_groups = feature_groups + self._get_feature_group(feature)
             feature_group_names = [
                 feature_group.name for feature_group in feature_groups
             ]
@@ -143,10 +157,14 @@ class Project:
         feature_location = feature["location"]
         req_feature_groups = feature["feature_groups"]
 
-        # Get feature class from __init__.py file in feature_location
-        all_feature_group_classes = self._get_feature_groups_from_filepath(
-            feature_location
-        )
+        if feature_location == "custom":
+            all_feature_group_classes = [f(feature["feature_names"][0])
+                                         for f in self.custom_features]
+        else:
+            # Get feature class from __init__.py file in feature_location
+            all_feature_group_classes = self._get_feature_groups_from_filepath(
+                feature_location
+            )
 
         # Search feature_name in all_feature_classes
         for feature_group_class in all_feature_group_classes:
@@ -200,10 +218,11 @@ class Project:
         List[str]
             List of all the required data
         """
-        self.computable_feature_names = self.config["features"][0]['feature_names']
+        self.computable_feature_names = list(itertools.chain(*[
+            f['feature_names'] for f in self.config["features"]]))
         total_required_data = set()
         for i, feature_group in enumerate(self.feature_groups):
-            if self.computable_feature_names[i][0] == 'all':
+            if self.computable_feature_names[i][0] == 'all' or feature_group.is_custom:
                 total_required_data.update(feature_group.get_required_data())
             else:
                 total_required_data.update(
@@ -214,64 +233,71 @@ class Project:
         logger.info(f"Total required data: {total_required_data}")
         return list(total_required_data)
 
+    def read_data(self) -> None:
+        """
+        Read the data from the data source
+        """
+        self.fetch_data()
+        if self.config["input"]["source_type"] == "local":
+            datareader = Reader(
+                self.spark_session,
+                self.config,
+                self.total_required_data,
+                self.config["configurations"]["df_type"],
+            )
+            self.data = datareader.read_data()
+        elif self.config["input"]["source_type"] == "mock":
+            datareader = Reader(
+                self.spark_session,
+                self.mock_config,
+                self.total_required_data,
+                self.config["configurations"]["df_type"],
+            )
+            self.data = datareader.read_data()
+        else:
+            raise ValueError("Wrong data location")
+
     def fetch_data(self) -> None:
         """
-        Fetches the data from the data source
+        Fetch the data from the data source
         """
-        if 'spark_config' not in self.config:
-            self.config['spark_config'] = {}
-
-        if self.config["input"]["data_type"] == "local":
-            if self.config["input"]["data_format"] in self.valid_input_formats:
-                sparkcsvdatareader = SparkCSVDataReader(
-                    self.config["input"],
-                    self.total_required_data,
-                    self.config["configurations"]["df_type"],
-                    self.config['spark_config']
-                )
-                self.data = sparkcsvdatareader.read_data()
-                sparkcsvdatareader.close_spark_session()
-            else:
-                raise ValueError("Wrong data format")
-
-        elif self.config["input"]["data_type"] == "mock":
+        if self.config["input"]["source_type"] == "mock":
             MOCK_URL = "https://github.com/RADAR-base-Analytics/mockdata"
             cache_dir = os.path.join(
                 os.path.expanduser("~"), ".cache", "radarpipeline", "mockdata")
             if not os.path.exists(cache_dir):
                 Repo.clone_from(MOCK_URL, cache_dir)
             mock_data_directory = os.path.join(cache_dir, "mockdata")
-            mock_config_input = {
-                "config": {
-                    "source_path": mock_data_directory
-                }
-            }
-            sparkcsvdatareader = SparkCSVDataReader(
-                mock_config_input, self.total_required_data,
-                spark_config=self.config['spark_config']
-            )
-            self.data = sparkcsvdatareader.read_data()
-            sparkcsvdatareader.close_spark_session()
+            self.mock_config = {
+                "input": {
+                    "config": {
+                        "source_path": mock_data_directory},
+                    "data_format": "csv"}}
+            self.mock_config["configurations"] = self.config["configurations"]
 
-        elif self.config["input"]["data_type"] == "sftp":
+        elif self.config["input"]["source_type"] == "sftp":
             sftp_data_reader = SftpDataReader(self.config["input"]["config"],
                                               self.total_required_data)
             root_dir = sftp_data_reader.get_root_dir()
             logger.info("Reading data from sftp")
             sftp_data_reader.read_sftp_data()
-            sftp_local_config = {
+            self.config["input"] = {
+                "source_type": "local",
+                "data_format": "csv",
                 "config": {
                     "source_path": root_dir
-                }
+                },
             }
-            sparkcsvdatareader = SparkCSVDataReader(
-                sftp_local_config,
-                self.total_required_data,
-                self.config["configurations"]["df_type"],
-                self.config['spark_config']
-            ).read_data()
-            self.data = sparkcsvdatareader.read_data()
-            sparkcsvdatareader.close_spark_session()
+        elif self.config["input"]["source_type"] == "local":
+            # check if source_path is a directory
+            # if not, raise an error
+            source_path = self.config["input"]["config"]["source_path"]
+            if not os.path.exists(source_path):
+                raise ValueError(f"Source path does not exist: {source_path}")
+            if os.path.isdir(source_path):
+                # check if there are any files in the directory
+                if not os.listdir(source_path):
+                    raise ValueError(f"Source path is empty: {source_path}")
         else:
             raise ValueError("Wrong data location")
 
@@ -279,10 +305,8 @@ class Project:
         """
         Computes the features from the ingested data
         """
-        self.computable_feature_names = self.config[
-            "features"][0]['feature_names']
         for i, feature_group in enumerate(self.feature_groups):
-            if self.computable_feature_names[i][0] == "all":
+            if self.computable_feature_names[i][0] == "all" or feature_group.is_custom:
                 feature_names, feature_values = feature_group.get_all_features(
                     self.data
                 )
@@ -297,19 +321,25 @@ class Project:
         """
         Exports the computed features to the specified location
         """
-
-        if self.config["configurations"]["df_type"] == "pandas":
-            writer = PandasDataWriter(
-                self.features,
-                self.config["output"]['config']["target_path"],
-                self.config["output"]["compress"],
-            )
-        elif self.config["configurations"]["df_type"] == "spark":
-            writer = SparkDataWriter(
-                self.features,
-                self.config["output"]['config']["target_path"],
-                self.config["output"]["compress"],
-            )
+        df_type = self.config["configurations"]["df_type"]
+        output_config = self.config["output"]
+        if output_config['output_location'] == "local":
+            if df_type == "pandas":
+                writer = PandasDataWriter(
+                    self.features,
+                    output_config['config']["target_path"],
+                    output_config["compress"],
+                    output_config['data_format']
+                )
+            elif df_type == "spark":
+                writer = SparkDataWriter(
+                    self.features,
+                    output_config['config']["target_path"],
+                    output_config["compress"],
+                    output_config['data_format']
+                )
+            else:
+                raise ValueError("Wrong df_type")
         else:
-            raise ValueError("Wrong df_type")
+            raise ValueError("Output location type not supported")
         writer.write_data()

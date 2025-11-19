@@ -59,7 +59,7 @@ class ConfigValidator():
         Validates the input data config
         """
 
-        if self.config["input"]["data_type"] == "sftp":
+        if self.config["input"]["source_type"] == "sftp":
             sftp_config_keys = [
                 "sftp_host",
                 "sftp_username",
@@ -70,7 +70,7 @@ class ConfigValidator():
                 if key not in self.config["input"]["config"]:
                     raise ValueError(f"Key not present in the config: {key}")
 
-        elif self.config["input"]["data_type"] == "local":
+        elif self.config["input"]["source_type"] == "local":
             if "source_path" not in self.config["input"]["config"]:
                 raise ValueError("Key not present in the config: source_path")
             else:
@@ -93,7 +93,7 @@ class ConfigValidator():
             if self.config["input"]["data_format"] not in self.valid_input_formats:
                 raise ValueError("Invalid value for key in input: data_format")
 
-        elif self.config["input"]["data_type"] == "mock":
+        elif self.config["input"]["source_type"] == "mock":
             self._update_mock_data()
 
         else:
@@ -108,11 +108,71 @@ class ConfigValidator():
             self.config["configurations"] = {}
 
         valid_df_types = ["pandas", "spark"]
+        valid_user_sampling_methods = ["fraction", "count", "userid"]
 
         if "df_type" not in self.config["configurations"]:
             self.config["configurations"]["df_type"] = "pandas"
         elif self.config["configurations"]["df_type"] not in valid_df_types:
             raise ValueError("Invalid value for the key: df_type")
+        if "user_sampling" in self.config["configurations"]:
+            if "method" not in self.config["configurations"]["user_sampling"]:
+                raise ValueError("Key not present in the user_sampling config: method")
+            elif (
+                self.config["configurations"]["user_sampling"]["method"]
+                not in valid_user_sampling_methods
+            ):
+                raise ValueError("Invalid value for the key: method")
+            else:
+                self.config["configurations"][
+                    "user_sampling"] = self._validate_user_sampling_config(
+                        self.config["configurations"]["user_sampling"])
+        else:
+            self.config["configurations"]["user_sampling"] = None
+
+        # Validating data sampling
+        valid_data_sampling_methods = ["fraction", "count", "time"]
+        if "data_sampling" in self.config["configurations"]:
+            if "method" not in self.config["configurations"]["data_sampling"]:
+                raise ValueError("Key not present in the data_sampling config: method")
+            elif (
+                self.config["configurations"]["data_sampling"]["method"]
+                not in valid_data_sampling_methods
+            ):
+                raise ValueError("Invalid value for the key: method")
+            else:
+                self.config["configurations"][
+                    "data_sampling"] = self._validate_data_sampling_config(
+                        self.config["configurations"]["data_sampling"])
+        else:
+            self.config["configurations"]["data_sampling"] = None
+
+    def _validate_user_sampling_config(self, user_sampling_config):
+        """
+        Validates the user_sampling config
+        """
+
+        if user_sampling_config["method"] == "fraction":
+            user_sampling_config = self._validate_sampling_fraction(
+                user_sampling_config)
+        elif user_sampling_config["method"] == "count":
+            user_sampling_config = self._validate_sampling_count(
+                user_sampling_config)
+        elif user_sampling_config["method"] == "userid":
+            user_sampling_config = self._validate_sampling_userids(
+                user_sampling_config)
+        return user_sampling_config
+
+    def _validate_data_sampling_config(self, data_sampling_config):
+        if data_sampling_config["method"] == "fraction":
+            data_sampling_config = self._validate_sampling_fraction(
+                data_sampling_config)
+        elif data_sampling_config["method"] == "count":
+            data_sampling_config = self._validate_sampling_count(
+                data_sampling_config)
+        elif data_sampling_config["method"] == "time":
+            data_sampling_config = self._validate_sampling_time(
+                data_sampling_config)
+        return data_sampling_config
 
     def _validate_features(self) -> None:
         """
@@ -147,8 +207,9 @@ class ConfigValidator():
                     f"feature_groups array cannot be empty at index {index}"
                 )
             feature_location = feature["location"]
-
-            if utils.is_valid_github_path(feature_location):
+            if feature_location == "custom":
+                pass
+            elif utils.is_valid_github_path(feature_location):
                 repo_name = utils.get_repo_name_from_url(feature_location)
                 cache_dir = os.path.join(
                     os.path.expanduser("~"), ".cache", "radarpipeline", repo_name
@@ -209,7 +270,6 @@ class ConfigValidator():
             else:
                 # Check if local_directory is absolute path. If not, then set it.
                 local_directory = self.config["output"]['config']["target_path"]
-                local_directory = utils.get_absolute_path(local_directory)
                 if not os.path.exists(local_directory):
                     os.makedirs(local_directory, exist_ok=True)
                 self.config["output"]['config']["target_path"] = local_directory
@@ -225,5 +285,185 @@ class ConfigValidator():
                 self.config["output"]["compress"] = False
             if self.config["output"]["compress"] == "true":
                 self.config["output"]["compress"] = True
+        elif self.config["output"]["output_location"] == "dataframe":
+            pass
         else:
             raise ValueError("Key not present in the config: output_location")
+
+    def _validate_sampling_fraction(self, sampling_config):
+        if "config" not in sampling_config:
+            raise ValueError("Key not present in the user_sampling config: config")
+        if "fraction" not in sampling_config["config"]:
+            raise ValueError(
+                "Key not present in the user_sampling config: fraction"
+            )
+        # converting fraction to float
+        try:
+            sampling_config["config"]["fraction"] = float(
+                sampling_config["config"]["fraction"]
+            )
+        except ValueError:
+            raise ValueError(
+                "Invalid value for the key: fraction. It should be a number"
+            )
+        if not 0 < sampling_config["config"]["fraction"] <= 1:
+            raise ValueError(
+                "Invalid value for the key: fraction. It should be between 0 and 1"
+            )
+        return sampling_config
+
+    def _validate_sampling_count(self, sampling_config):
+        if "config" not in sampling_config:
+            raise ValueError("Key not present in the user_sampling config: config")
+        if "count" not in sampling_config["config"]:
+            raise ValueError("Key not present in the user_sampling config: count")
+        try:
+            sampling_config["config"]["count"] = int(
+                sampling_config["config"]["count"]
+            )
+        except ValueError:
+            raise ValueError(
+                "Invalid value for the key: count. It should be a number"
+            )
+        if sampling_config["config"]["count"] <= 0:
+            raise ValueError(
+                "Invalid value for the key: count. It should be greater than 0"
+            )
+        return sampling_config
+
+    def _validate_sampling_userids(self, sampling_config):
+        if "config" not in sampling_config:
+            raise ValueError("Key not present in the user_sampling config: config")
+        if "userids" not in sampling_config["config"]:
+            raise ValueError("Key not present in the user_sampling config: userids")
+        if len(sampling_config["config"]["userids"]) == 0:
+            raise ValueError(
+                "user_ids array cannot be empty in the user_sampling config"
+            )
+        # check if userids are in array. If not convert to array
+        if not isinstance(sampling_config["config"]["userids"], list):
+            sampling_config["config"]["userids"] = [
+                sampling_config["config"]["userids"]
+            ]
+        return sampling_config
+
+    def _validate_sampling_time_instance(self, time_dict: dict):
+        if ("starttime" not in time_dict
+            ) and (
+                "endtime" not in time_dict):
+            raise ValueError("Neither startime nor endtime present in the config")
+        # check if starttime and endtime are can be converted into time format
+        # if so, convert them
+        if "starttime" in time_dict:
+            time_dict['starttime'] = utils.convert_str_to_time(
+                time_dict['starttime'])
+        if "endtime" in time_dict:
+            time_dict['endtime'] = utils.convert_str_to_time(
+                time_dict['endtime'])
+        if "time_column" not in time_dict:
+            logger.warning("time_column not present in the config. \
+                Using default time column: value.time")
+            time_dict["time_column"] = "value.time"
+        return time_dict
+
+    def _validate_sampling_time(self, sampling_config):
+        if "config" not in sampling_config:
+            raise ValueError("Key not present in the user_sampling config: config")
+        if type(sampling_config["config"]) is list:
+            if len(sampling_config["config"]) == 0:
+                raise ValueError(
+                    "No starttime and endtime present in the config"
+                )
+            for i, time_dict in enumerate(sampling_config["config"]):
+                sampling_config["config"][i] = self._validate_sampling_time_instance(
+                    time_dict)
+        else:
+            sampling_config["config"] = self._validate_sampling_time_instance(
+                sampling_config["config"])
+        return sampling_config
+
+
+class ConfigGenerator():
+    def __init__(self, config_dict=None,
+                 path="./config.yaml") -> None:
+        self.config_dict = config_dict
+
+    def generate_config(self):
+        """
+        Generates a default configuration dictionary based on the provided format.
+        """
+        self.config = self._get_default_config()
+        # change default config based on the config dict
+        if self.config_dict:
+            for key, value in self.config_dict.items():
+                if key in self.config:
+                    if isinstance(value, dict) and isinstance(self.config[key], dict):
+                        self.config[key].update(value)
+                    else:
+                        self.config[key] = value
+        return self.config
+
+    def _get_default_config(self):
+        default_config = {
+            "project": {
+                "project_name": "mock_project",
+                "description": "mock_description",
+                "version": "mock_version",
+            },
+            "input": {
+                "source_type": "mock",  # could be mock, local, sftp, s3
+                "config": {
+                    "source_path": "mockdata/mockdata",  # Default for mock/local
+                },
+                "data_format": "csv",
+            },
+            "configurations": {
+                "df_type": "pandas",
+                # Uncomment and configure the following as needed
+                # "user_sampling": {
+                #     "method": "fraction",
+                #     "config": {
+                #         "fraction": 0.8,
+                #     },
+                # },
+                # "data_sampling": {
+                #     "method": "time",
+                #     "config": [
+                #         {
+                #             "starttime": "2018-11-22 00:00:00",
+                #             "endtime": "2018-11-26 00:00:00",
+                #             "time_column": "value.time",
+                #         },
+                #     ],
+                # },
+            },
+            "features": [
+                {
+                    "location": "https://github.com/RADAR-base-Analytics/mockfeatures",
+                    "branch": "main",
+                    "feature_groups": ["MockFeatureGroup"],
+                    "feature_names": ["all"],
+                },
+                # Uncomment and configure the following for custom features
+                # {
+                #     "location": "custom",
+                #     "feature_groups": ["Tabularize"],
+                #     "feature_names": [
+                #         "android_phone_battery_level",
+                #         "android_phone_step_count",
+                #     ],
+                # },
+            ],
+            "output": {
+                "output_location": "local",  # can be local, postgres, sftp
+                "config": {
+                    "target_path": "output/mockdata/",
+                },
+                "data_format": "csv",
+                "compress": False,
+            },
+        }
+        return default_config
+
+    def save_config(self):
+        pass

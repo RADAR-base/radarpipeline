@@ -7,12 +7,88 @@ import json
 import logging
 import os
 from radarpipeline.common.utils import reparent
+import posixpath
 
 from contextlib import contextmanager
 from stat import S_IMODE, S_ISDIR, S_ISREG
 import warnings
 
 logger = logging.getLogger(__name__)
+
+
+class WTCallbacks(object):
+    '''an object to house the callbacks, used internally'''
+    def __init__(self):
+        '''set instance vars'''
+        self._flist = []
+        self._dlist = []
+        self._ulist = []
+
+    def file_cb(self, pathname):
+        '''called for regular files, appends pathname to .flist
+
+        :param str pathname: file path
+        '''
+        self._flist.append(pathname)
+
+    def dir_cb(self, pathname):
+        '''called for directories, appends pathname to .dlist
+
+        :param str pathname: directory path
+        '''
+        self._dlist.append(pathname)
+
+    def unk_cb(self, pathname):
+        '''called for unknown file types, appends pathname to .ulist
+
+        :param str pathname: unknown entity path
+        '''
+        self._ulist.append(pathname)
+
+    @property
+    def flist(self):
+        '''return a sorted list of files currently traversed
+
+        :getter: returns the list
+        :setter: sets the list
+        :type: list
+        '''
+        return sorted(self._flist)
+
+    @flist.setter
+    def flist(self, val):
+        '''setter for _flist '''
+        self._flist = val
+
+    @property
+    def dlist(self):
+        '''return a sorted list of directories currently traversed
+
+        :getter: returns the list
+        :setter: sets the list
+        :type: list
+        '''
+        return sorted(self._dlist)
+
+    @dlist.setter
+    def dlist(self, val):
+        '''setter for _dlist '''
+        self._dlist = val
+
+    @property
+    def ulist(self):
+        '''return a sorted list of unknown entities currently traversed
+
+        :getter: returns the list
+        :setter: sets the list
+        :type: list
+        '''
+        return sorted(self._ulist)
+
+    @ulist.setter
+    def ulist(self, val):
+        '''setter for _ulist '''
+        self._ulist = val
 
 
 class ConnectionException(Exception):
@@ -78,6 +154,8 @@ class SftpConnector():
         self._sftp_live = False
         self._transport = None
         self._transport = paramiko.Transport((host, port))
+        self._transport.banner_timeout = 200
+        self._transport.auth_timeout = 200
         self._transport.use_compression(False)
         private_key_pass = None
         self._set_authentication(password, private_key, private_key_pass)
@@ -238,6 +316,87 @@ class SftpConnector():
                     self.get(rname, reparent(localdir, rname),
                              preserve_mtime=preserve_mtime)
 
+    def get_r(self, remotedir, localdir, preserve_mtime=False):
+        """recursively copy remotedir structure to localdir
+
+        :param str remotedir: the remote directory to copy from
+        :param str localdir: the local directory to copy to
+        :param bool preserve_mtime: *Default: False* -
+            preserve modification time on files
+
+        :returns: None
+
+        :raises:
+
+        """
+        self._sftp_connect()
+        wtcb = WTCallbacks()
+        self.walktree(remotedir, wtcb.file_cb, wtcb.dir_cb, wtcb.unk_cb)
+        # handle directories we recursed through
+        for dname in wtcb.dlist:
+            for subdir in path_advance(dname):
+                try:
+                    os.mkdir(reparent(localdir, subdir))
+                    # force result to a list for setter,
+                    wtcb.dlist = wtcb.dlist + [subdir, ]
+                except OSError:     # dir exists
+                    pass
+
+        for fname in wtcb.flist:
+            # they may have told us to start down farther, so we may not have
+            # recursed through some, ensure local dir structure matches
+            head, _ = os.path.split(fname)
+            if head not in wtcb.dlist:
+                for subdir in path_advance(head):
+                    if subdir not in wtcb.dlist and subdir != '.':
+                        os.mkdir(reparent(localdir, subdir))
+                        wtcb.dlist = wtcb.dlist + [subdir, ]
+
+            self.get(fname,
+                     reparent(localdir, fname),
+                     preserve_mtime=preserve_mtime)
+
+    def walktree(self, remotepath, fcallback, dcallback, ucallback,
+                 recurse=True):
+        '''recursively descend, depth first, the directory tree rooted at
+        remotepath, calling discreet callback functions for each regular file,
+        directory and unknown file type.
+
+        :param str remotepath:
+            root of remote directory to descend, use '.' to start at
+            :attr:`.pwd`
+        :param callable fcallback:
+            callback function to invoke for a regular file.
+            (form: ``func(str)``)
+        :param callable dcallback:
+            callback function to invoke for a directory. (form: ``func(str)``)
+        :param callable ucallback:
+            callback function to invoke for an unknown file type.
+            (form: ``func(str)``)
+        :param bool recurse: *Default: True* - should it recurse
+
+        :returns: None
+
+        :raises:
+
+        '''
+        self._sftp_connect()
+        for entry in self.listdir(remotepath):
+            pathname = posixpath.join(remotepath, entry)
+            mode = self._sftp.stat(pathname).st_mode
+            if S_ISDIR(mode):
+                # It's a directory, call the dcallback function
+                dcallback(pathname)
+                if recurse:
+                    # now, recurse into it
+                    self.walktree(pathname, fcallback, dcallback, ucallback)
+            elif S_ISREG(mode):
+                # It's a file, call the fcallback function
+                fcallback(pathname)
+            else:
+                # Unknown file type
+                ucallback(pathname)
+
     def close(self):
         """Closes the connection and cleans up."""
         # Close SFTP Connection.
@@ -248,3 +407,29 @@ class SftpConnector():
         if self._transport:
             self._transport.close()
             self._transport = None
+
+
+def path_advance(thepath, sep=os.sep):
+    '''generator to iterate over a file path forwards
+
+    :param str thepath: the path to navigate forwards
+    :param str sep: *Default: os.sep* - the path separator to use
+
+    :returns: (iter)able of strings
+
+    '''
+    # handle a direct path
+    pre = ''
+    if thepath[0] == sep:
+        pre = sep
+    curpath = ''
+    parts = thepath.split(sep)
+    if pre:
+        if parts[0]:
+            parts[0] = pre + parts[0]
+        else:
+            parts[1] = pre + parts[1]
+    for part in parts:
+        curpath = os.path.join(curpath, part)
+        if curpath:
+            yield curpath

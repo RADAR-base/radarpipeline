@@ -2,23 +2,48 @@ from radarpipeline.datalib import RadarVariableData
 import unittest
 import os
 import pandas as pd
-from pandas.testing import assert_frame_equal
+from pyspark.sql.types import TimestampType
+import pyspark.sql.functions as f
+from pyspark.testing import assertDataFrameEqual
+from radarpipeline.project.sparkengine import SparkEngine
+import unittest
+from radarpipeline.common.utils import preprocess_time_data
 
 
-class TestRadarVariableData(unittest.TestCase):
+class PySparkTestCase(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.spark_engine = SparkEngine()
+        cls.spark = cls.spark_engine.initialize_spark_session()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.spark_engine.close_spark_session()
+
+    def preprocess_data(self, data):
+        return preprocess_time_data(data)
+
+
+class TestRadarVariableData(PySparkTestCase):
+
     def setUp(self):
-        PANDAS_MOCK_PATH = ("tests/resources/test_data/test_participant/"
-                            "android_phone_step_count/test_variable_data.csv.gz")
-        self.mock_pandas = pd.read_csv(PANDAS_MOCK_PATH)
-        self.radar_variable_data = RadarVariableData(self.mock_pandas)
+        MOCK_PATH = ("tests/resources/test_data/test_participant/"
+                     "android_phone_step_count/0000_11.csv.gz")
+        self.mock_df = self.spark.read.csv(MOCK_PATH,
+                                           header=True,
+                                           inferSchema=True)
+        self.mock_df = self.preprocess_data(self.mock_df)
+        self.radar_variable_data = RadarVariableData(self.mock_df)
 
     def test_get_data(self):
-        assert_frame_equal(self.radar_variable_data.get_data(), self.mock_pandas)
+        assertDataFrameEqual(self.radar_variable_data.get_data(), self.mock_df,
+                             checkRowOrder=True)
 
     def test_get_data_keys(self):
         self.assertEqual(self.radar_variable_data.get_data_keys(),
-                         list(self.mock_pandas.columns))
+                         list(self.mock_df.columns))
 
     def test_get_data_sizes(self):
         self.assertEqual(self.radar_variable_data.get_data_size(),
-                         len(self.mock_pandas.index))
+                         int(self.mock_df.count()))
+
