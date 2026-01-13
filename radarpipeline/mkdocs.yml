@@ -1,0 +1,60 @@
+site_name: RADAR Pipeline Documentation
+site_description: Documentation for RADAR Pipeline - A data processing pipeline for RADAR-base data
+site_author: RADAR-base
+repo_url: https://github.com/RADAR-base/radarpipeline
+repo_name: RADAR-base/radarpipeline
+docs_dir: radarpipeline/docs
+
+theme:
+  name: material
+  palette:
+    primary: indigo
+    accent: indigo
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - toc.integrate
+    - search.suggest
+    - search.highlight
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Introduction: Introduction.md
+      - Why Radarpipeline: Why Radarpipeline.md
+      - Quickstart: Quickstart.md
+      - Create your first pipeline: Create your first pipeline.md
+  - Core Concepts:
+      - Core Concepts: Core Concepts.md
+      - Configuration: Configuration.md
+  - Usage:
+      - CLI Tool: Radarpipeline as a CLI tool.md
+      - Jupyter Notebooks: Radarpipeline & jupyter notebooks.md
+      - Big Data: Radarpipeline for Big data.md
+      - Data Reformating: RADAR-pipeline reformating the data.md
+  - Future Plans: Future plans.md
+
+markdown_extensions:
+  - admonition
+  - codehilite
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.details
+  - pymdownx.tabbed
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+plugins:
+  - search
+  - mkdocstrings
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/RADAR-base/radarpipeline
