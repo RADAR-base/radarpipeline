@@ -5,7 +5,7 @@ The Mock Pipeline is a simple example of how to use the RADAR-pipeline to read d
 ## Mock Pipeline Run
 
 To run the Mock Pipeline, follow these steps:
-1. **Install the RADAR-pipeline**: Follow the [installation instructions](../README.md#installation) to install the RADAR-pipeline.
+1. **Install the RADAR-pipeline**: Follow the [installation instructions](index.md#installation) to install the RADAR-pipeline.
 
 2. **Git clone Mock Features**:
 

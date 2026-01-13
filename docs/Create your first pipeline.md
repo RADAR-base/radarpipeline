@@ -10,7 +10,7 @@ Create a new repository on GitHub. The naming convention for the new repository 
 
 ### Step 2. Install radar-pipeline module
 
-To install the `radarpipeline` module, follow the instructions in the How to run section in [Installation](./Installation)
+To install the `radarpipeline` module, follow the instructions in the How to run section in [Installation](index.md#installation)
 
 ### Step 3. Setup the repository
 

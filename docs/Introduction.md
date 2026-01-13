@@ -8,7 +8,7 @@ RADAR Pipeline is an open-source python package to help researchers and users wo
 
 The pipeline is still in the development phase. If you are interested in contributing, please refer to the [contributor guide](#contributor-guide) below.
 
-The best way to start with the pipeline would be to [install it](../README.md) and do a [Mock Pipeline](https://github.com/RADAR-base/radar-pipeline/wiki/Mock-Pipeline) run. This would give you an idea of the different parts of the pipeline and what a typical run of the pipeline looks like to the user. We are working on publiszhing more exemplar pipelines to help researchers with a variety of configurations get started with the project and integrate it to publish their own pipelines faster.
+The best way to start with the pipeline would be to [install it](index.md) and do a [Mock Pipeline](https://github.com/RADAR-base/radar-pipeline/wiki/Mock-Pipeline) run. This would give you an idea of the different parts of the pipeline and what a typical run of the pipeline looks like to the user. We are working on publiszhing more exemplar pipelines to help researchers with a variety of configurations get started with the project and integrate it to publish their own pipelines faster.
 
 If you face any issue, please feel free to open a [discussion](https://github.com/RADAR-base/radar-pipeline/discussions) or an [issue](https://github.com/RADAR-base/radar-pipeline/issues) on GitHub.
 

@@ -19,3 +19,6 @@ dhp
 avro==1.11.3
 pyarrow==16.1.0
 setuptools
+mkdocs==1.6.1
+mkdocs-material==9.7.1
+mkdocstrings==1.0.0
