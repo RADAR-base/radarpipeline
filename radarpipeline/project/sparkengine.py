@@ -14,7 +14,7 @@ class SparkEngine():
     """
 
     def __init__(self, spark_config: Dict = None):
-        default_spark_config = {'spark_master': 'local',
+        default_spark_config = {'spark_master': 'local[*]',
                                 'spark.executor.instances': 2,
                                 'spark.driver.memory': '10G',
                                 'spark.executor.cores': 4,
@@ -62,9 +62,14 @@ class SparkEngine():
         all partitions for each Spark action (e.g. collect) in bytes.
         Should be at least 1M, or 0 for unlimited.
         """
-        if self.spark_config['spark_master'] == "local":
+        master = self.spark_config['spark_master']
+        if master.startswith("local"):
+            # Any local master (local, local[*], local[4], ...) gets the configured
+            # settings; plain "local" keeps its historical meaning of all cores.
+            if master == "local":
+                master = "local[*]"
             self.spark = (
-                SparkSession.builder.master("local[*]").appName("radarpipeline")
+                SparkSession.builder.master(master).appName("radarpipeline")
                 .config('spark.executor.instances',
                         self.spark_config['spark.executor.instances'])
                 .config('spark.executor.cores',

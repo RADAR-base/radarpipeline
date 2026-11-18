@@ -38,6 +38,10 @@ class RadarVariableData(Data):
     def get_data_size(self) -> int:
         return int(self._data.count())
 
+    def is_empty(self) -> bool:
+        # Stops at the first row, unlike count() which scans every file.
+        return self._data.isEmpty()
+
     def _preprocess_data(self) -> None:
         """
         Converts all time value columns to datetime format

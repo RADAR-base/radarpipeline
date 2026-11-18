@@ -10,11 +10,17 @@ def read_file(filename):
 
 setup(
     name="radarpipeline",
-    version="2.2.0",
+    version="2.2.2",
     license='Apache',
-    description="A python feature generation and visualization package use with RADAR-base project data.",
+    description=(
+        "A python feature generation and visualization package use with "
+        "RADAR-base project data."
+    ),
     url="https://github.com/RADAR-base/radarpipeline",
-    download_url='https://github.com/RADAR-base/radarpipeline/archive/refs/tags/v2.1.0.tar.gz',
+    download_url=(
+        'https://github.com/RADAR-base/radarpipeline/archive/refs/tags/'
+        'v2.1.0.tar.gz'
+    ),
     readme="README.md",
     long_description=read_file('README.md'),
     long_description_content_type='text/markdown',

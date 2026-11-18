@@ -3,7 +3,6 @@ import unittest
 import os
 import pandas as pd
 from radarpipeline.project.sparkengine import SparkEngine
-import unittest
 from radarpipeline.common.utils import preprocess_time_data
 
 
