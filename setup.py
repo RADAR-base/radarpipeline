@@ -10,7 +10,7 @@ def read_file(filename):
 
 setup(
     name="radarpipeline",
-    version="2.2.1",
+    version="2.2.2",
     license='Apache',
     description=(
         "A python feature generation and visualization package use with "

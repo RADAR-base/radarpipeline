@@ -1,5 +1,9 @@
 name: Publish to PyPI and TestPyPI
+# Merges to dev        -> publish to TestPyPI
+# GitHub release published -> publish to PyPI
 on:
+  push:
+    branches: ['dev']
   release:
     types: [published]
 
@@ -15,6 +19,16 @@ jobs:
           uses: actions/setup-python@v5
           with:
             python-version: "3.12"
+        - name: Check release tag matches package version
+          if: github.event_name == 'release'
+          run: |
+            PKG_VERSION=$(python3 -c "import re; print(re.search(r'version=\"([^\"]+)\"', open('setup.py').read()).group(1))")
+            TAG_VERSION="${GITHUB_REF_NAME#v}"
+            echo "Package version: $PKG_VERSION / Release tag: $GITHUB_REF_NAME"
+            if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
+              echo "::error::Release tag '$GITHUB_REF_NAME' does not match setup.py version '$PKG_VERSION'"
+              exit 1
+            fi
         - name: Install pypa/build
           run: >-
             python3 -m
@@ -29,39 +43,17 @@ jobs:
             name: python-package-distributions
             path: dist/
 
-    publish-to-pypi:
-        name: Publish radarpipeline to PyPI
-        if: startsWith(github.ref, 'refs/tags/')  # only publish to PyPI on tag pushes
-        needs:
-            - build
-        runs-on: ubuntu-latest
-        environment:
-          name: pypi
-          url: https://pypi.org/p/radarpipeline  # Replace <package-name> with your PyPI project name
-        permissions:
-          id-token: write  # IMPORTANT: mandatory for trusted publishing
-        steps:
-            - name: Download all the dists
-              uses: actions/download-artifact@v4
-              with:
-                name: python-package-distributions
-                path: dist/
-            - name: Publish distribution to PyPI
-              uses: pypa/gh-action-pypi-publish@release/v1
-
     publish-to-testpypi:
         name: Publish radarpipeline to TestPyPI
+        if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
         needs:
             - build
         runs-on: ubuntu-latest
-
         environment:
           name: testpypi
           url: https://test.pypi.org/p/radarpipeline
-
         permissions:
           id-token: write  # IMPORTANT: mandatory for trusted publishing
-
         steps:
         - name: Download all the dists
           uses: actions/download-artifact@v4
@@ -72,3 +64,24 @@ jobs:
           uses: pypa/gh-action-pypi-publish@release/v1
           with:
             repository-url: https://test.pypi.org/legacy/
+            skip-existing: true
+
+    publish-to-pypi:
+        name: Publish radarpipeline to PyPI
+        if: github.event_name == 'release'
+        needs:
+            - build
+        runs-on: ubuntu-latest
+        environment:
+          name: pypi
+          url: https://pypi.org/p/radarpipeline
+        permissions:
+          id-token: write  # IMPORTANT: mandatory for trusted publishing
+        steps:
+        - name: Download all the dists
+          uses: actions/download-artifact@v4
+          with:
+            name: python-package-distributions
+            path: dist/
+        - name: Publish distribution to PyPI
+          uses: pypa/gh-action-pypi-publish@release/v1
