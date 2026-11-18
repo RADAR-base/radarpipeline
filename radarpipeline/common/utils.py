@@ -63,10 +63,20 @@ def combine_pyspark_dfs(dfs: List[ps.DataFrame]) -> ps.DataFrame:
     ps.DataFrame
         Combined pyspark dataframe
     """
-    df_comb = reduce(
-        lambda df1, df2: df1.unionByName(df2, allowMissingColumns=True), dfs
-    )
-    return df_comb
+    if not dfs:
+        return None
+    # Union neighbouring pairs level by level: keeps the plan depth at
+    # O(log n) instead of O(n) while preserving the input row order.
+    level = list(dfs)
+    while len(level) > 1:
+        merged = [
+            left.unionByName(right, allowMissingColumns=True)
+            for left, right in zip(level[0::2], level[1::2])
+        ]
+        if len(level) % 2:
+            merged.append(level[-1])
+        level = merged
+    return level[0]
 
 
 def is_valid_github_path(path: str) -> bool:

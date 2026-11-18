@@ -27,7 +27,9 @@ DATA_TYPE_MAPPING = {
     "short": SHORT_TYPE,
     "int": INT_TYPE,
     "long": LONG_TYPE,
-    "float": FLOAT_TYPE,
+    # CSV holds decimal text; reading Avro floats as double avoids float32 rounding
+    # and matches the types inferSchema produced before Avro schemas were applied.
+    "float": DOUBLE_TYPE,
     "double": DOUBLE_TYPE,
     "string": STRING_TYPE,
     "char": STRING_TYPE,

@@ -6,7 +6,6 @@ from pyspark.sql.types import TimestampType
 import pyspark.sql.functions as f
 from pyspark.testing import assertDataFrameEqual
 from radarpipeline.project.sparkengine import SparkEngine
-import unittest
 from radarpipeline.common.utils import preprocess_time_data
 
 
@@ -46,4 +45,3 @@ class TestRadarVariableData(PySparkTestCase):
     def test_get_data_sizes(self):
         self.assertEqual(self.radar_variable_data.get_data_size(),
                          int(self.mock_df.count()))
-
