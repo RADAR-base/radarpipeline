@@ -134,7 +134,8 @@ class SparkCSVDataReader(DataReader):
             # RADAR_NEW: uid/variable/yyyymm/yyyymmdd.csv.gz
             "RADAR_NEW": re.compile(r"""^[\w-]+/([\w]+)/
                                     [\d]+/([\d]+.csv.gz$|schema-\1.json$)""", re.X),
-            # RADAR_OLD: uid/questionnaire_response/QuestionaireName/yyyymm/yyyymmdd.csv.gz
+            # RADAR_QUES:
+            #   uid/questionnaire_response/QuestionaireName/yyyymm/yyyymmdd.csv.gz
             "RADAR_QUES": re.compile(r"""^[\w-]+/([\w]+)/([\w]+)/
                                     [\d]+/([\d]+.csv.gz$|schema-\1.json$)""", re.X)
             # RADAR_Iceberg: variable/data/date/files.parquet

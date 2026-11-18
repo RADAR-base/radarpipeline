@@ -6,7 +6,6 @@ import pyspark.sql.functions as f
 from pyspark.sql.types import TimestampType
 from pandas.testing import assert_frame_equal
 from radarpipeline.project.sparkengine import SparkEngine
-import unittest
 from radarpipeline.common.utils import preprocess_time_data
 
 
@@ -22,6 +21,7 @@ class PySparkTestCase(unittest.TestCase):
 
     def preprocess_data(self, data):
         return preprocess_time_data(data)
+
 
 class TestRadarData(PySparkTestCase):
 

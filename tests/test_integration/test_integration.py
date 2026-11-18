@@ -297,14 +297,14 @@ class TestIntegration(unittest.TestCase):
 
     def test_compute_features(self):
         # Test the compute_features function
-        input_config={
+        input_config = {
             "source_type": "local",
             "config": {
                 "source_path": "mockdata/mockdata"
             },
             "data_format": "csv"
         }
-        feature_config={
+        feature_config = {
             "location": "custom",
             "feature_groups": ["Tabularize"],
             "feature_names": [["android_phone_battery_level"]]
@@ -315,7 +315,8 @@ class TestIntegration(unittest.TestCase):
         expected_df = pd.read_csv(
             os.path.join(expected_output_path,
                          "tabularize_features_android_phone_battery_level.csv"))
-        expected_df['value.time'] = pd.to_datetime(expected_df['value.time']).astype("datetime64[us]")
+        expected_df['value.time'] = pd.to_datetime(
+            expected_df['value.time']).astype("datetime64[us]")
         expected_df['value.timeReceived'] = pd.to_datetime(
             expected_df['value.timeReceived']).astype("datetime64[us]")
         assert_frame_equal(expected_df.sort_values(['key.userId', 'value.time'])
