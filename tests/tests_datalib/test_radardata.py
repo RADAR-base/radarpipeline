@@ -59,3 +59,38 @@ class TestRadarData(PySparkTestCase):
         assert_frame_equal(self.radar_data.get_combined_data_by_variable(
             "test_variable_data"),
             self.mock_pandas)
+
+    def test_combined_data_is_cached(self):
+        first = self.radar_data.get_combined_data_by_variable("test_variable_data")
+        self.assertIn("test_variable_data", self.radar_data._combined_cache)
+        second = self.radar_data.get_combined_data_by_variable("test_variable_data")
+        assert_frame_equal(first, second)
+        # Each caller gets its own copy, not the cached object
+        self.assertIsNot(first, second)
+        self.assertIsNot(first, self.radar_data._combined_cache["test_variable_data"])
+
+    def test_cached_data_not_affected_by_caller_mutation(self):
+        first = self.radar_data.get_combined_data_by_variable("test_variable_data")
+        expected = first.copy()
+        first["new_column"] = 1
+        first.drop(first.index, inplace=True)
+        second = self.radar_data.get_combined_data_by_variable("test_variable_data")
+        assert_frame_equal(second, expected)
+
+    def test_clear_cache(self):
+        self.radar_data.get_combined_data_by_variable("test_variable_data")
+        self.radar_data.clear_cache()
+        self.assertEqual(self.radar_data._combined_cache, {})
+        self.radar_data.get_combined_data_by_variable("test_variable_data")
+        self.radar_data.set_data({"test_user_data": self.radar_user_data})
+        self.assertEqual(self.radar_data._combined_cache, {})
+
+    def test_spark_combined_data_is_cached(self):
+        radar_data = RadarData({"test_user_data": self.radar_user_data},
+                               df_type="spark")
+        first = radar_data.get_combined_data_by_variable("test_variable_data")
+        second = radar_data.get_combined_data_by_variable("test_variable_data")
+        # Spark DataFrames are immutable, so the same object can be shared
+        self.assertIs(first, second)
+        radar_data.clear_cache()
+        self.assertEqual(radar_data._combined_cache, {})

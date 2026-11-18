@@ -1,3 +1,4 @@
+import csv
 import json
 import logging
 import os
@@ -21,7 +22,9 @@ from radarpipeline.common.utils import get_hash
 import avro
 from avro.datafile import DataFileReader, DataFileWriter
 from avro.io import DatumReader, DatumWriter
-from avro.schema import RecordSchema, Field, PrimitiveSchema, UnionSchema, Schema
+from avro.schema import (
+    RecordSchema, Field, PrimitiveSchema, UnionSchema, Schema, EnumSchema
+)
 from datetime import datetime
 
 from collections import Counter
@@ -131,9 +134,10 @@ class SparkCSVDataReader(DataReader):
             # RADAR_NEW: uid/variable/yyyymm/yyyymmdd.csv.gz
             "RADAR_NEW": re.compile(r"""^[\w-]+/([\w]+)/
                                     [\d]+/([\d]+.csv.gz$|schema-\1.json$)""", re.X),
-            # RADAR_OLD: uid/questionnaire/QuestionaireName/yyyymm/yyyymmdd.csv.gz
+            # RADAR_OLD: uid/questionnaire_response/QuestionaireName/yyyymm/yyyymmdd.csv.gz
             "RADAR_QUES": re.compile(r"""^[\w-]+/([\w]+)/([\w]+)/
                                     [\d]+/([\d]+.csv.gz$|schema-\1.json$)""", re.X)
+            # RADAR_Iceberg: variable/data/date/files.parquet
         }
         self.required_data = required_data
         if isinstance(self.required_data, str):
@@ -189,14 +193,14 @@ class SparkCSVDataReader(DataReader):
     def _filter_files_by_headers(self, data_files):
         file_dict = {}
         for file in data_files:
-            with gzip.open(file, 'rb') as f:
-                columns = f.readline().decode("utf-8").split(",")
-                f.close()
+            with gzip.open(file, 'rt', encoding=constants.ENCODING, newline='') as f:
+                header = f.readline()
+            # Parse the header like a CSV row so the trailing line break does not
+            # end up in the last column name; otherwise the hash never matches the
+            # Avro schema and every file falls back to inferSchema.
+            columns = next(csv.reader([header]), [])
             column_hash = get_hash(columns)
-            if column_hash in file_dict:
-                file_dict[column_hash].append(file)
-            else:
-                file_dict[column_hash] = [file]
+            file_dict.setdefault(column_hash, []).append(file)
         return file_dict
 
     def _read_variable_data_files(
@@ -237,6 +241,11 @@ class SparkCSVDataReader(DataReader):
                     )
                     dfs.append(df)
                 else:
+                    # Header differs from the Avro schema: infer types for this
+                    # group. The inferred schema is deliberately not cached for
+                    # reuse on other users, since types inferred from one user's
+                    # files can be too narrow for another's (values would be
+                    # silently nulled).
                     df = self.spark.read.load(
                         file_dict[column_hash],
                         format="csv",
@@ -246,8 +255,6 @@ class SparkCSVDataReader(DataReader):
                         inferSchema="true",
                         encoding=constants.ENCODING,
                     )
-                    inferred_schema = df.schema
-                    schema.add_schema(df.columns, inferred_schema)
                     dfs.append(df)
         else:
             for column_hash in file_dict:
@@ -293,6 +300,8 @@ class SparkCSVDataReader(DataReader):
                     for f in os.listdir(absolute_dirname)
                     if f.endswith(".csv.gz")
                 ]
+                if not data_files:
+                    continue
                 schema = None
                 schema_dir = absolute_dirname
                 schema_dir_base = self.schema_reader.get_schema_dir_base(schema_dir)
@@ -303,7 +312,7 @@ class SparkCSVDataReader(DataReader):
                     logger.info("Schema not found, inferring from data file")
                 variable_data = self._read_variable_data_files(data_files, schema,
                                                                schema_dir_base)
-                if variable_data.get_data_size() > 0:
+                if not variable_data.is_empty():
                     variable_data_dict[dirname] = variable_data
             user_data_dict[uid] = RadarUserData(variable_data_dict, self.df_type)
 
@@ -341,6 +350,8 @@ class SparkCSVDataReader(DataReader):
                         for f in os.listdir(absolute_dirname)
                         if f.endswith(".csv.gz")
                     ]
+                if not data_files:
+                    continue
                 schema = None
                 schema_dir_base = dirname
                 schema_dir = absolute_dirname
@@ -351,7 +362,7 @@ class SparkCSVDataReader(DataReader):
                     logger.info("Schema not found, inferring from data file")
                 variable_data = self._read_variable_data_files(data_files, schema,
                                                                schema_dir_base)
-                if variable_data.get_data_size() > 0:
+                if not variable_data.is_empty():
                     variable_data_dict[dirname] = variable_data
             user_data_dict[uid] = RadarUserData(variable_data_dict, self.df_type)
 
@@ -513,6 +524,10 @@ class AvroSchemaReader(SchemaReader):
 
         elif isinstance(record_schema, PrimitiveSchema):
             schema_dict[precursor] = self._get_field(record_schema.type)
+            return schema_dict
+        elif isinstance(record_schema, EnumSchema):
+            # Enum values are written to the CSV as their symbol text.
+            schema_dict[precursor] = constants.STRING_TYPE
             return schema_dict
         else:
             return {}

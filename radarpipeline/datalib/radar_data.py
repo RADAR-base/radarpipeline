@@ -18,12 +18,22 @@ class RadarData(Data):
     def __init__(self, data: Dict[str, RadarUserData], df_type: str = "pandas") -> None:
         self._data = data
         self.df_type = df_type
+        # Combined (all users) data per variable, built on first request so that
+        # features asking for the same variable don't re-read and re-union it.
+        self._combined_cache: Dict[str, DataType] = {}
 
     def get_data(self) -> Dict[str, RadarUserData]:
         return self._data
 
     def set_data(self, data: Dict[str, RadarUserData]) -> None:
         self._data = data
+        self.clear_cache()
+
+    def clear_cache(self) -> None:
+        """
+        Releases the combined per-variable data kept by get_combined_data_by_variable
+        """
+        self._combined_cache.clear()
 
     def get_data_type(self) -> str:
         return self.df_type
@@ -102,9 +112,7 @@ class RadarData(Data):
 
         for var, data_list in variable_dict.items():
             if data_list:
-                combined_df = utils.combine_pyspark_dfs(data_list)
-                if self.df_type == "pandas":
-                    combined_df = combined_df.toPandas()
+                combined_df = self._get_combined_variable(var, data_list)
                 if return_dict:
                     variable_data_dict[var] = combined_df
                 else:
@@ -119,6 +127,21 @@ class RadarData(Data):
                 raise ValueError(
                     f"No data found for the variable {list(variable_dict.keys())}")
         return variable_data_dict if return_dict else variable_data_list
+
+    def _get_combined_variable(self, var: str, data_list: List[DataType]) -> DataType:
+        combined_df = self._combined_cache.get(var)
+        if combined_df is None:
+            combined_df = utils.combine_pyspark_dfs(data_list)
+            if self.df_type == "pandas":
+                combined_df = combined_df.toPandas()
+            # Spark frames are kept lazy and not persisted: persisting only pays
+            # off when a variable feeds several actions, and costs time otherwise.
+            self._combined_cache[var] = combined_df
+        if self.df_type == "pandas":
+            # Features commonly modify the frame in place; hand out a copy so
+            # the cached version stays clean for the next caller.
+            return combined_df.copy()
+        return combined_df
 
     def get_data_by_user_id(
         self, user_ids: Union[str, List[str]]

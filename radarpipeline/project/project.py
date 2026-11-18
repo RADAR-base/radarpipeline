@@ -316,6 +316,11 @@ class Project:
                 )
             for feature_name, feature_value in zip(feature_names, feature_values):
                 self.features[feature_name] = feature_value
+        # pandas features are fully computed by now, so release the combined
+        # per-variable data. Spark features are lazy and still read it during
+        # export, so for spark it is released in export_data instead.
+        if self.data.get_data_type() == "pandas":
+            self.data.clear_cache()
 
     def export_data(self) -> None:
         """
@@ -343,3 +348,5 @@ class Project:
         else:
             raise ValueError("Output location type not supported")
         writer.write_data()
+        if getattr(self, "data", None) is not None:
+            self.data.clear_cache()

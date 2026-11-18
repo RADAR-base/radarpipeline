@@ -1,0 +1,24 @@
+configurations:
+  df_type: pandas
+features:
+- branch: main
+  feature_groups:
+  - MockFeatureGroup
+  feature_names:
+  - all
+  location: https://github.com/RADAR-base-Analytics/mockfeatures
+input:
+  config:
+    source_path: mockdata/mockdata
+  data_format: csv
+  source_type: mock
+output:
+  compress: false
+  config:
+    target_path: output/mockdata/
+  data_format: csv
+  output_location: local
+project:
+  description: mock_description
+  project_name: mock_project
+  version: mock_version
